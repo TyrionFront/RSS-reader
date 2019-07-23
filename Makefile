@@ -6,3 +6,7 @@ install:
 
 lint:
 	npm run eslint .
+
+build:
+	rm -rf dist
+	NODE_ENV=production npx webpack
