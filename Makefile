@@ -10,3 +10,9 @@ lint:
 build:
 	rm -rf dist
 	NODE_ENV=production npx webpack
+	cp ./CNAME ./dist
+
+deploy:
+	cd ./dist
+	surge ./
+	cd ..
