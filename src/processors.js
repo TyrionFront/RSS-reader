@@ -14,10 +14,10 @@ export const processResponse = (response) => {
   return { info: [title, description], newsList };
 };
 
-export const processRssData = ({ newsList, info }, processNews, appState) => {
+export const processRssData = ({ newsList, info }, appState, feedUrl) => {
   const [title, description] = info;
   const {
-    workableUrls, rssInfo, lastAddedUrl,
+    workableUrls, rssInfo,
   } = appState.feeds;
 
   const feedId = `rssFeed${workableUrls.size}`;
@@ -28,10 +28,10 @@ export const processRssData = ({ newsList, info }, processNews, appState) => {
         title,
         description,
         newsCount: newsList.length,
-        link: lastAddedUrl,
+        link: feedUrl,
       },
     };
-  processNews(newsList, feedId, appState);
+  return [newsList, feedId, appState];
 };
 
 export const processNews = (newsList, rssId, appState) => {

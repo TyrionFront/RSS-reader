@@ -73,10 +73,12 @@ export default () => {
 
       axios.get(`https://cors-anywhere.herokuapp.com/${lastValidUrl}`)
         .then(processResponse)
-        .then(data => processRssData(data, processNews, appState))
+        .then(data => processRssData(data, appState, lastValidUrl))
+        .then((result) => {
+          processNews(...result);
+        })
         .catch((err) => {
           alert(`Wrong news source or bad connection !\n${err}`); // eslint-disable-line
-          workableUrls.delete(lastValidUrl);
           throw new Error(err);
         });
     }
@@ -94,7 +96,7 @@ export default () => {
           throw new Error(err);
         });
     });
-    setTimeout(getFreshNews, 5000);
+    setTimeout(getFreshNews, 30000);
   };
   getFreshNews();
 };
