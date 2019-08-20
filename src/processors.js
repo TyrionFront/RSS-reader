@@ -4,10 +4,15 @@ export const processResponse = (response) => {
   const data = domParser.parseFromString(response.data, 'application/xml');
   const newsTitles = [...data.querySelectorAll('item title')];
   const newsLinks = [...data.querySelectorAll('item link')];
-  const newsDescriptions = [...data.querySelectorAll('item description')];
+  const buffer = document.createElement('div'); // eslint-disable-line no-undef
+  const newsDescriptions = [...data.querySelectorAll('item description')]
+    .map((elem) => { // in case if there is html-tags in previously parsed text
+      buffer.innerHTML = elem.textContent;
+      return buffer.textContent;
+    });
   const newsList = newsTitles
     .map(({ textContent }, i) => [textContent,
-      newsLinks[i].textContent, newsDescriptions[i].textContent]);
+      newsLinks[i].textContent, newsDescriptions[i]]);
 
   const title = data.querySelector('channel title').textContent;
   const description = data.querySelector('channel description').textContent;
