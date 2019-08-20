@@ -35,25 +35,45 @@
               <form style="position: relative;">
                 <input class="form-control" type="text" placeholder="Input rss-URL" aria-label="Search">
                 <button class="btn btn-outline-primary btn-sm btn-block my-sm-2" type="submit" disabled>
-                  add rss-feed
+                  add rss-link
                 </button>
                 <button type="button" class="btn btn-outline-secondary btn-sm" data-dismiss="modal" style="width: 50%;
                   position: absolute;
                   left: 25%;">cancel</button>
-                </form>
-              </div>
+              </form>
+            </div>
           </div>
         </div>
       </div>
       <h5 class=" title" style="text-align: center; font-weight: bold">News</h5>
-                  <hr>
-                  <div class="container" style="border-left: 2px solid rgb(0, 183, 255);
+      <hr>
+      <div class="container" style="border-left: 2px solid rgb(0, 183, 255);
                     position: absolute; margin-left: -1.5%;">
-                    <ul class=" list-group" id="news" style="max-height: 550px; margin-bottom: 10px; overflow:scroll;
-                  -webkit-overflow-scrolling: touch; display: none"></ul>
+        <ul class=" list-group" id="news" style="max-height: 550px; margin-bottom: 10px; overflow:scroll;
+                  -webkit-overflow-scrolling: touch; display: none">
+          <li class="list-group-item" id="storyExample">
+            <a href="#">Story title</a>
+            <button type="button" class="btn btn-outline-info btn-sm" data-toggle="modal" data-target="#storyId"
+              style="margin-left: 5%;">read more</button>
+            <div class="modal fade bd-example-modal-lg" id="storyId" role="dialog" tabindex="-1"
+              aria-labelledby="modalCenterTitle" aria-hidden="true">
+              <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title" id="#">title</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                      <span aria-hidden="true">&times;</span>
+                    </button>
                   </div>
+                  <div class="modal-body">description</div>
+                </div>
+              </div>
             </div>
-          </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
 </body>
 
 </html>

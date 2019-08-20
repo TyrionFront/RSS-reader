@@ -31,6 +31,7 @@ export default () => {
   const feedsTag = document.getElementById('rssFeeds');
   const newsTag = document.getElementById('news');
   const rssExample = document.getElementById('rssExample');
+  const storyExample = document.getElementById('storyExample');
 
   watch(appState, 'typedLink', () => {
     inputField.classList.toggle('border-danger');
@@ -46,7 +47,7 @@ export default () => {
   });
 
   watch(appState.feeds.items, 'freshNews', () => {
-    makeNewsList(appState, newsTag);
+    makeNewsList(appState, newsTag, storyExample);
   });
 
   inputField.addEventListener('input', ({ target }) => {

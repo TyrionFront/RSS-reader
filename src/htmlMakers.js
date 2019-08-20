@@ -1,5 +1,6 @@
 /* global document */
 /* eslint no-undef: "error" */
+import $ from 'jquery';
 
 export const makeRssFeedsList = ({ feeds }, feedsTag, example) => {
   const { rssInfo, lastFeedId } = feeds;
@@ -8,24 +9,18 @@ export const makeRssFeedsList = ({ feeds }, feedsTag, example) => {
     feedsTag.removeChild(example);
   }
   const { title, description, newsCount } = lastRssInfo;
-  const li = document.createElement('li');
-  li.className = 'list-group-item list-group-item-action';
-  const div = document.createElement('div');
-  div.className = 'd-flex w-100 justify-content-between';
-  div.innerHTML = `<h5 class="mb-1">${title}</h5>`;
-  const p = document.createElement('p');
-  p.className = 'mb-1';
-  p.textContent = description;
-  const span = document.createElement('span');
-  span.id = `newsCount${lastFeedId}`;
-  span.className = 'badge badge-warning badge-pill';
-  span.style = 'position: relative; left: 80%;';
-  span.textContent = `${newsCount}`;
-  li.append(div, p, span);
-  feedsTag.prepend(li);
+  const newLi = example.cloneNode(true);
+  newLi.id = lastFeedId;
+  $(newLi).find('h5.mb-1').text(title);
+  $(newLi).find('p.mb-1').text(description);
+  $(newLi).find('span.badge').attr('id', `newsCount${lastFeedId}`).text(newsCount);
+  feedsTag.prepend(newLi);
 };
 
-export const makeNewsList = ({ feeds }, newsTag) => {
+export const makeNewsList = ({ feeds }, newsTag, example) => {
+  if (newsTag.contains(example)) {
+    newsTag.removeChild(example);
+  }
   const { lastFeedId, items } = feeds;
   const { freshNews, allNews } = items;
   const currentFeedAllNewsCount = Object.keys(allNews[lastFeedId]).length;
@@ -34,31 +29,14 @@ export const makeNewsList = ({ feeds }, newsTag) => {
   const badge = document.getElementById(`newsCount${lastFeedId}`);
   currentFreshNewsTitles.forEach((title, i) => {
     const [link, description] = currentFreshNewsList[title];
-    const li = document.createElement('li');
     const storyId = `story${i + currentFeedAllNewsCount}${lastFeedId}`;
-    li.className = 'list-group-item';
-    li.innerHTML = `<a href="${link}">${title}</a>
-      <button type="button" class="btn btn-outline-info btn-sm"
-      data-toggle="modal" data-target="#${storyId}" style="margin-left: 5%;">read more</button>`;
-    const modal = document.createElement('div');
-    modal.className = 'modal fade bd-example-modal-lg';
-    modal.id = storyId;
-    modal.tabIndex = -1;
-    modal.setAttribute('role', 'dialog');
-    modal.setAttribute('aria-labelledby', 'modalCenterTitle');
-    modal.setAttribute('aria-hidden', 'true');
-    modal.innerHTML = `<div class="modal-dialog modal-dialog-centered" role="document">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="exampleModalLongTitle">${title}</h5>
-          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-            <span aria-hidden="true">&times;</span>
-          </button>
-        </div>
-        <div class="modal-body">${description}</div>
-      </div>
-    </div>`;
-    li.append(modal);
+    const li = example.cloneNode(true);
+    li.id = storyId;
+    $(li).find('a').attr('href', link).text(title);
+    $(li).find('.btn-outline-info').attr('data-target', `#modal${storyId}`);
+    $(li).find('.modal').attr('id', `modal${storyId}`);
+    $(li).find('.modal-title').attr('id', `title${storyId}`).text(title);
+    $(li).find('.modal-body').text(description);
     newsTag.prepend(li);
     newsTag.style.display = 'block'; // eslint-disable-line no-param-reassign
   });
