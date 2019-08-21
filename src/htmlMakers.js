@@ -11,8 +11,8 @@ export const makeRssFeedsList = ({ feeds }, feedsTag, example) => {
   const { title, description, newsCount } = lastRssInfo;
   const newLi = example.cloneNode(true);
   newLi.id = lastFeedId;
-  $(newLi).find('h5.mb-1').text(title);
-  $(newLi).find('p.mb-1').text(description);
+  $(newLi).find('h5').text(title);
+  $(newLi).find('p').text(description);
   $(newLi).find('span.badge').attr('id', `newsCount${lastFeedId}`).text(newsCount);
   feedsTag.prepend(newLi);
 };

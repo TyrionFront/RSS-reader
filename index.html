@@ -3,54 +3,58 @@
 <head>
   <meta charset="utf-8">
   <title>RSS-reader</title>
+  <style>
+    #rssFeeds::-webkit-scrollbar { width: 0 }
+  </style>
 </head>
 
 <body>
-  <div class="row">
-    <div class="col" style="max-width: 30%;">
-      <h5 class="title" style="text-align: center; font-weight: bold">Feeds</h5>
-      <hr>
-      <ul class="list-group" id="rssFeeds">
-        <li class="list-group-item list-group-item-action" id="rssExample">
-          <div class="d-flex w-100 justify-content-between">
+  <div class="container-fluid" style="width: 100%">
+    <div class="row">
+      <div class="col-4" style="min-height: 250px">
+        <h5 class="title" style="text-align: center; font-weight: bold">Feeds</h5>
+        <hr>
+        <ul class="list-group" id="rssFeeds" style="position: absolute; left: 15px; right: 15px;
+          max-height: 525px;
+          overflow: scroll;
+          overflow-x: hidden;">
+          <li class="list-group-item list-group-item-action" id="rssExample">
             <h5 class="mb-1">RSS-feed title</h5>
-          </div>
-          <p class="mb-1">rss-feed description</p>
-          <span class="badge badge-warning badge-pill" style="position: relative; left: 80%;">news count</span>
-        </li>
-      </ul>
-      <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#newFeedModal" style="margin-top: 20px;
-      width: 50%;
-      position: relative;
-      left: 25%;">
-        <span>&#43;</span> add feed
-      </button>
-    </div>
-    <div class="col" style="position: relative">
-      <div class="modal fade" id="newFeedModal" tabindex="-1" role="dialog" aria-labelledby="modalCenterTitle"
-        aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered" role="document">
-          <div class="modal-content">
-            <div class="jumbotron" style="margin: 2%">
-              <form style="position: relative;">
-                <input class="form-control" type="text" placeholder="Input rss-URL" aria-label="Search">
-                <button class="btn btn-outline-primary btn-sm btn-block my-sm-2" type="submit" disabled>
-                  add rss-link
-                </button>
-                <button type="button" class="btn btn-outline-secondary btn-sm" data-dismiss="modal" style="width: 50%;
-                  position: absolute;
-                  left: 25%;">cancel</button>
-              </form>
+            <p class="mb-1 ">rss-feed description</p>
+            <span class="badge badge-success badge-pill" style="position: absolute; right: 5px; bottom: 5px;">news count</span>
+          </li>
+        </ul>
+        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#newFeedModal" style="width: 91%;
+        position: absolute;
+        left: 4.5%;
+        bottom: 0;">
+          <span>&#43;</span> add feed
+        </button>
+      </div>
+      <div class="col-8" style="border-left: 2px solid rgb(47, 130, 255);">
+        <div class="modal fade" id="newFeedModal" tabindex="-1" role="dialog" aria-labelledby="modalCenterTitle"
+          aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+              <div class="jumbotron" style="margin: 2%">
+                <form>
+                  <input class="form-control" type="text" placeholder="Input rss-URL" aria-label="Search" autofocus>
+                  <button class="btn btn-outline-primary btn-sm btn-block my-sm-2" type="submit" disabled>
+                    add rss-link
+                  </button>
+                  <button type="button" class="btn btn-outline-secondary btn-sm" data-dismiss="modal" style="width: 50%;
+                    position: relative;
+                    left: 25%;">cancel</button>
+                </form>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-      <h5 class=" title" style="text-align: center; font-weight: bold">News</h5>
-      <hr>
-      <div class="container" style="border-left: 2px solid rgb(0, 183, 255);
-                    position: absolute; margin-left: -1.5%;">
-        <ul class=" list-group" id="news" style="max-height: 550px; margin-bottom: 10px; overflow:scroll;
-                  -webkit-overflow-scrolling: touch; display: none">
+        <h5 class=" title" style="text-align: center; font-weight: bold">News</h5>
+        <hr>
+        <ul class=" list-group" id="news" style="max-height: 565px; margin-bottom: 10px; overflow: scroll;
+        overflow-x: hidden;
+        display: none;">
           <li class="list-group-item" id="storyExample">
             <a href="#">Story title</a>
             <button type="button" class="btn btn-outline-info btn-sm" data-toggle="modal" data-target="#storyId"
