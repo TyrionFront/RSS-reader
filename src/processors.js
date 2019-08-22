@@ -41,14 +41,14 @@ export const processRssData = ({ newsList, info }, appState, feedUrl) => {
 
 export const processNews = (newsList, rssId, appState) => {
   const { freshNews, allNews } = appState.feeds.items;
-  const channelFreshNews = freshNews[rssId] ? freshNews[rssId] : {};
-  allNews[rssId] = allNews[rssId] ? { ...allNews[rssId], ...channelFreshNews } : {};
-  const updatedList = newsList.reduce((acc, story) => {
+  const prevFreshNews = freshNews[rssId] ? freshNews[rssId] : {};
+  allNews[rssId] = allNews[rssId] ? { ...allNews[rssId], ...prevFreshNews } : {};
+  const currentFreshNews = newsList.reduce((acc, story) => {
     const [title, link, description] = story;
     return allNews[rssId][title] ? acc : { [title]: [link, description], ...acc };
   }, {});
-  const listSize = Object.keys(updatedList).length;
-  const newFreshNews = { ...freshNews, [rssId]: updatedList };
+  const listSize = Object.keys(currentFreshNews).length;
+  const newFreshNews = { ...freshNews, [rssId]: currentFreshNews };
   if (listSize > 0) {
     appState.feeds.lastFeedId = rssId;
     appState.feeds.items.freshNews = newFreshNews;

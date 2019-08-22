@@ -9,5 +9,7 @@ lint:
 
 build:
 	rm -rf dist
-	NODE_ENV=production npx webpack
-	cp ./CNAME ./dist
+	NODE_ENV=development npx webpack
+	cp CNAME dist/
+	mkdir dist/img
+	cp img/businessman.png dist/img/businessman.png

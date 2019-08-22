@@ -10,17 +10,18 @@
   </style>
 </head>
 
-<body style="background-image: url(../img/businessman.png); background-size: 100%">
+<body style="background: no-repeat url(../img/businessman.png); background-size: 100%">
   <div class="container-fluid" style="width: 100%">
     <div class="row">
       <div class="col-4" style="min-height: 250px">
-        <h5 class="title" style="text-align: center; font-weight: bold; color: black">Feeds</h5>
+        <h5 class="title" style="text-align: center; font-weight: bold; color: white">Feeds</h5>
         <hr>
         <ul class="list-group" id="rssFeeds" style="position: absolute; left: 15px; right: 15px;
           max-height: 525px;
           overflow: scroll;
-          overflow-x: hidden;">
-          <li class="list-group-item list-group-item-action" id="rssExample" style="margin-bottom: 5px">
+          overflow-x: hidden;
+          scrollbar-width: none;">
+          <li class="list-group-item list-group-item-action rounded border" id="rssExample" style="margin-bottom: 5px">
             <div style="float: left; max-width: 90%">
               <h5 class="mb-1">RSS-feed title</h5>
               <p class="mb-1">rss-feed description</p>
@@ -36,7 +37,7 @@
         </button>
       </div>
       <div class="col-8" style="border-left: 2px solid rgb(47, 130, 255);">
-        <h5 class=" title" style="text-align: center; font-weight: bold; color: black">News</h5>
+        <h5 class="title" style="text-align: center; font-weight: bold; color: white">News</h5>
         <hr>
         <ul class=" list-group" id="news" style="max-height: 570px; margin-bottom: 10px; overflow: scroll;
         overflow-x: hidden;
