@@ -12,7 +12,8 @@ export const processResponse = (response) => {
     });
   const newsList = newsTitles
     .map(({ textContent }, i) => [textContent,
-      newsLinks[i].textContent, newsDescriptions[i]]);
+      newsLinks[i].textContent, newsDescriptions[i]])
+    .reverse();
 
   const title = data.querySelector('channel title').textContent;
   const description = data.querySelector('channel description').textContent;
@@ -42,14 +43,22 @@ export const processRssData = ({ newsList, info }, appState, feedUrl) => {
 export const processNews = (newsList, rssId, appState) => {
   const { freshNews, allNews } = appState.feeds.items;
   const prevFreshNews = freshNews[rssId] ? freshNews[rssId] : {};
-  allNews[rssId] = allNews[rssId] ? { ...allNews[rssId], ...prevFreshNews } : {};
+  allNews[rssId] = allNews[rssId] ? { ...allNews[rssId], ...prevFreshNews } : { ...prevFreshNews };
+  const feedNewsTitles = Object.keys(allNews[rssId]).reduce((acc, storyId) => {
+    const [title] = allNews[rssId][storyId];
+    return acc.add(title);
+  }, new Set());
+
+  const feedNewsCount = feedNewsTitles.size;
   const currentFreshNews = newsList.reduce((acc, story) => {
+    const freshNewsCount = Object.keys(acc).length;
     const [title, link, description] = story;
-    return allNews[rssId][title] ? acc : { [title]: [link, description], ...acc };
+    const storyId = `story${feedNewsCount + freshNewsCount + 1}${rssId}`;
+    return feedNewsTitles.has(title) ? acc : { ...acc, [storyId]: [title, link, description] };
   }, {});
-  const listSize = Object.keys(currentFreshNews).length;
+  const currentFreshNewsCount = Object.keys(currentFreshNews).length;
   const newFreshNews = { ...freshNews, [rssId]: currentFreshNews };
-  if (listSize > 0) {
+  if (currentFreshNewsCount > 0) {
     appState.feeds.lastFeedId = rssId;
     appState.feeds.items.freshNews = newFreshNews;
   }

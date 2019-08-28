@@ -20,9 +20,15 @@ export default () => {
       allAddedUrls: new Set(),
       workableUrls: new Set(),
       rssInfo: {},
+      activeFeeds: {
+        currentActiveFeed: '',
+        prevActiveFeed: '',
+      },
       items: {
         freshNews: {},
         allNews: {},
+        shown: [],
+        hidden: ['storyExample'],
       },
     },
   };
@@ -32,6 +38,10 @@ export default () => {
   const newsTag = document.getElementById('news');
   const rssExample = document.getElementById('rssExample');
   const storyExample = document.getElementById('storyExample');
+
+  rssExample.addEventListener('click', ({ currentTarget }) => {
+    currentTarget.classList.toggle('active');
+  });
 
   watch(appState, 'typedLink', () => {
     inputField.classList.toggle('border-danger');
