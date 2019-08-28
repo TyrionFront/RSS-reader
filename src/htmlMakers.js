@@ -2,18 +2,19 @@
 /* eslint no-undef: "error" */
 import $ from 'jquery';
 
-export const makeRssFeedsList = ({ feeds }, feedsTag, example) => {
+export const makeRssFeedsList = ({ feeds }, feedsList, example, showHideFeedNews) => {
   const { rssInfo, lastFeedId } = feeds;
   const lastRssInfo = rssInfo[lastFeedId];
   const { title, description, newsCount } = lastRssInfo;
   const newLi = $(example).clone(true, true);
   example.style.display = 'none'; // eslint-disable-line no-param-reassign
   newLi[0].id = lastFeedId;
+  newLi[0].addEventListener('click', showHideFeedNews);
   newLi.css('display', 'block');
   newLi.find('h5').text(title);
   newLi.find('p').text(description);
   newLi.find('span.badge').attr('id', `newsCount${lastFeedId}`).text(newsCount);
-  newLi.prependTo(feedsTag);
+  newLi.prependTo(feedsList);
 };
 
 export const makeNewsList = ({ feeds }, newsTag, example) => {

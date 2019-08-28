@@ -4,6 +4,7 @@
 import axios from 'axios';
 import { watch } from 'melanke-watchjs';
 import validator from 'validator';
+import $ from 'jquery';
 import { processResponse, processRssData, processNews } from './processors';
 import { makeRssFeedsList, makeNewsList } from './htmlMakers';
 
@@ -39,9 +40,21 @@ export default () => {
   const rssExample = document.getElementById('rssExample');
   const storyExample = document.getElementById('storyExample');
 
-  rssExample.addEventListener('click', ({ currentTarget }) => {
-    currentTarget.classList.toggle('active');
-  });
+  const showHideFeedNews = ({ currentTarget }) => {
+    const prevFeed = document.querySelector('#rssFeeds .active');
+    if (prevFeed) {
+      prevFeed.classList.remove('active');
+    }
+    currentTarget.classList.add('active');
+    const feedId = currentTarget.id;
+    const allNewsList = $(newsTag).find('li');
+    allNewsList.css('display', 'none');
+    $(newsTag).find(`.${feedId}`).css('display', 'block');
+    if (currentTarget === prevFeed) {
+      allNewsList.css('display', 'block');
+      currentTarget.classList.toggle('active');
+    }
+  };
 
   watch(appState, 'typedLink', () => {
     inputField.classList.toggle('border-danger');
@@ -53,7 +66,7 @@ export default () => {
   });
 
   watch(appState.feeds, 'rssInfo', () => {
-    makeRssFeedsList(appState, feedsTag, rssExample);
+    makeRssFeedsList(appState, feedsTag, rssExample, showHideFeedNews);
   });
 
   watch(appState.feeds.items, 'freshNews', () => {
