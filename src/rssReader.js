@@ -4,9 +4,8 @@
 import axios from 'axios';
 import { watch } from 'melanke-watchjs';
 import validator from 'validator';
-import $ from 'jquery';
 import { processResponse, processRssData, processNews } from './processors';
-import { makeRssFeedsList, makeNewsList } from './htmlMakers';
+import { makeRssFeedsList, makeNewsList, displayNews } from './htmlMakers';
 
 export default () => {
   const appState = {
@@ -21,15 +20,11 @@ export default () => {
       allAddedUrls: new Set(),
       workableUrls: new Set(),
       rssInfo: {},
-      activeFeeds: {
-        currentActiveFeed: '',
-        prevActiveFeed: '',
-      },
+      activeFeedId: '',
+      prevActiveFeedId: '',
       items: {
         freshNews: {},
         allNews: {},
-        shown: [],
-        hidden: ['storyExample'],
       },
     },
   };
@@ -40,20 +35,11 @@ export default () => {
   const rssExample = document.getElementById('rssExample');
   const storyExample = document.getElementById('storyExample');
 
-  const showHideFeedNews = ({ currentTarget }) => {
-    const prevFeed = document.querySelector('#rssFeeds .active');
-    if (prevFeed) {
-      prevFeed.classList.remove('active');
-    }
-    currentTarget.classList.add('active');
-    const feedId = currentTarget.id;
-    const allNewsList = $(newsTag).find('li');
-    allNewsList.css('display', 'none');
-    $(newsTag).find(`.${feedId}`).css('display', 'block');
-    if (currentTarget === prevFeed) {
-      allNewsList.css('display', 'block');
-      currentTarget.classList.toggle('active');
-    }
+  const markActive = ({ currentTarget }) => {
+    const { activeFeedId } = appState.feeds;
+    const currentId = currentTarget.id;
+    appState.feeds.prevActiveFeedId = activeFeedId;
+    appState.feeds.activeFeedId = activeFeedId !== currentId ? currentId : ` ${currentId}`;
   };
 
   watch(appState, 'typedLink', () => {
@@ -66,11 +52,15 @@ export default () => {
   });
 
   watch(appState.feeds, 'rssInfo', () => {
-    makeRssFeedsList(appState, feedsTag, rssExample, showHideFeedNews);
+    makeRssFeedsList(appState, feedsTag, rssExample, markActive);
   });
 
   watch(appState.feeds.items, 'freshNews', () => {
     makeNewsList(appState, newsTag, storyExample);
+  });
+
+  watch(appState.feeds, 'activeFeedId', () => {
+    displayNews(appState, newsTag);
   });
 
   inputField.addEventListener('input', ({ target }) => {
@@ -120,7 +110,7 @@ export default () => {
           throw new Error(err);
         });
     });
-    setTimeout(getFreshNews, 30000);
+    setTimeout(getFreshNews, 20000);
   };
   getFreshNews();
 };
