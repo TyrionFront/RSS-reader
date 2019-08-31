@@ -54,7 +54,8 @@ export const processNews = (newsList, rssId, appState) => {
     const freshNewsCount = Object.keys(acc).length;
     const [title, link, description] = story;
     const storyId = `story${feedNewsCount + freshNewsCount + 1}${rssId}`;
-    return feedNewsTitles.has(title) ? acc : { ...acc, [storyId]: [title, link, description] };
+    return feedNewsTitles.has(title) || acc[storyId]
+      ? acc : { ...acc, [storyId]: [title, link, description] };
   }, {});
   const currentFreshNewsCount = Object.keys(currentFreshNews).length;
   const newFreshNews = { ...freshNews, [rssId]: currentFreshNews };

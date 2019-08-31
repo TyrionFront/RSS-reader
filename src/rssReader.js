@@ -39,7 +39,7 @@ export default () => {
     const { activeFeedId } = appState.feeds;
     const currentId = currentTarget.id;
     appState.feeds.prevActiveFeedId = activeFeedId;
-    appState.feeds.activeFeedId = activeFeedId !== currentId ? currentId : ` ${currentId}`;
+    appState.feeds.activeFeedId = activeFeedId !== currentId ? currentId : `${currentId} sameFeed`;
   };
 
   watch(appState, 'typedLink', () => {

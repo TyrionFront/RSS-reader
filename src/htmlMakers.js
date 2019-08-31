@@ -18,18 +18,20 @@ export const makeRssFeedsList = ({ feeds }, feedsList, example, markActive) => {
 };
 
 export const makeNewsList = ({ feeds }, newsTag, example) => {
-  const { lastFeedId, items } = feeds;
+  const { lastFeedId, activeFeedId, items } = feeds;
   const { freshNews, allNews } = items;
+  const [activeId, isSameId] = activeFeedId.split(' ');
   const currentFeedAllNewsCount = Object.keys(allNews[lastFeedId]).length;
-  const currentFreshNewsList = freshNews[lastFeedId];
-  const currentFreshNewsIds = Object.keys(currentFreshNewsList);
+  const currentFeedFreshNews = freshNews[lastFeedId];
+  const currentFreshNewsIds = Object.keys(currentFeedFreshNews);
   const badge = document.getElementById(`newsCount${lastFeedId}`);
+  const visualization = !activeId || isSameId || activeId === lastFeedId ? 'block' : 'none';
   currentFreshNewsIds.forEach((storyId) => {
-    const [title, link, description] = currentFreshNewsList[storyId];
+    const [title, link, description] = currentFeedFreshNews[storyId];
     const li = $(example).clone(true);
     li[0].id = storyId;
     li.addClass(lastFeedId);
-    li.css('display', 'block');
+    li.css('display', visualization);
     li.find('a').attr('href', link).text(title);
     li.find('.btn-outline-info').attr('data-target', `#modal${storyId}`);
     li.find('.modal').attr('id', `modal${storyId}`);
@@ -44,7 +46,7 @@ export const makeNewsList = ({ feeds }, newsTag, example) => {
 
 export const displayNews = ({ feeds }, newsList) => {
   const { activeFeedId, prevActiveFeedId } = feeds;
-  const currentId = activeFeedId.trim();
+  const [currentId] = activeFeedId.split(' ');
   const prevFeed = document.querySelector('#rssFeeds .active');
   const currentFeed = document.getElementById(currentId);
   const news = $(newsList).find('li');
