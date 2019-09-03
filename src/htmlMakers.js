@@ -44,12 +44,12 @@ export const makeNewsList = ({ feeds }, newsTag, example) => {
   badge.textContent = currentFreshNewsIds.length + currentFeedAllNewsCount;
 };
 
-export const displayNews = ({ feeds }, newsList) => {
+export const displayNews = ({ feeds }, newsListTag) => {
   const { activeFeedId, prevActiveFeedId } = feeds;
   const [currentId] = activeFeedId.split(' ');
   const prevFeed = document.querySelector('#rssFeeds .active');
   const currentFeed = document.getElementById(currentId);
-  const news = $(newsList).find('li');
+  const news = $(newsListTag).find('li');
   if (currentId === prevActiveFeedId) {
     news.css('display', 'block');
     currentFeed.classList.toggle('active');
@@ -60,5 +60,5 @@ export const displayNews = ({ feeds }, newsList) => {
   }
   news.css('display', 'none');
   currentFeed.classList.add('active');
-  $(newsList).find(`.${currentId}`).css('display', 'block');
+  $(newsListTag).find(`.${currentId}`).css('display', 'block');
 };
