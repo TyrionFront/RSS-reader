@@ -2,6 +2,10 @@
 export const processResponse = (response) => {
   const domParser = new DOMParser(); // eslint-disable-line no-undef
   const data = domParser.parseFromString(response.data, 'application/xml');
+  const parserError = data.querySelector('parsererror');
+  if (parserError) {
+    throw new Error('No rss found !\n Parser error: data format in not \'application/rss+xml\'');
+  }
   const newsTitles = [...data.querySelectorAll('item title')];
   const newsLinks = [...data.querySelectorAll('item link')];
   const buffer = document.createElement('div'); // eslint-disable-line no-undef
@@ -20,12 +24,13 @@ export const processResponse = (response) => {
   return { info: [title, description], newsList };
 };
 
-export const processRssData = ({ newsList, info }, appState, feedUrl) => {
+export const updateFeedsState = ({ newsList, info }, appState, feedUrl) => {
   const [title, description] = info;
   const {
     workableUrls, rssInfo,
   } = appState.feeds;
 
+  workableUrls.add(feedUrl);
   const feedId = `rssFeed${workableUrls.size}`;
   appState.feeds
     .rssInfo = {
