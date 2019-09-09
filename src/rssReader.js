@@ -36,7 +36,6 @@ export default () => {
   const newsTag = document.getElementById('news');
   const rssExample = document.getElementById('rssExample');
   const storyExample = document.getElementById('storyExample');
-  const rssTypes = ['application/xml', 'application/rss+xml'];
 
   const markActive = ({ currentTarget }) => {
     const { activeFeedId } = appState.feeds;
