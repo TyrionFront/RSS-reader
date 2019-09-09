@@ -4,20 +4,22 @@
 import axios from 'axios';
 import { watch } from 'melanke-watchjs';
 import validator from 'validator';
-import { processResponse, processRssData, processNews } from './processors';
+import { processResponse, updateFeedsState, processNews } from './processors';
 import { makeRssFeedsList, makeNewsList, displayNews } from './htmlMakers';
 
 export default () => {
   const appState = {
-    typedLink: {
-      isEmpty: true,
-      isValid: false,
-    },
-    feeds: {
+    links: {
+      typedLink: {
+        isEmpty: true,
+        isValid: false,
+      },
       lastValidUrl: '',
       lastAddedUrl: '',
-      lastFeedId: '',
       allAddedUrls: new Set(),
+    },
+    feeds: {
+      lastFeedId: '',
       workableUrls: new Set(),
       rssInfo: {},
       activeFeedId: '',
@@ -42,12 +44,12 @@ export default () => {
     appState.feeds.activeFeedId = activeFeedId !== currentId ? currentId : `${currentId} sameFeed`;
   };
 
-  watch(appState, 'typedLink', () => {
+  watch(appState.links, 'typedLink', () => {
     inputField.classList.toggle('border-danger');
-    addLinkBtn.disabled = !appState.typedLink.isValid;
+    addLinkBtn.disabled = !appState.links.typedLink.isValid;
   });
 
-  watch(appState.feeds, 'lastAddedUrl', () => {
+  watch(appState.links, 'lastAddedUrl', () => {
     inputField.value = '';
   });
 
@@ -65,34 +67,31 @@ export default () => {
 
   inputField.addEventListener('input', ({ target }) => {
     const { value } = target;
-    appState.typedLink.isEmpty = value.length === 0;
-    const { allAddedUrls } = appState.feeds;
+    appState.links.typedLink.isEmpty = value.length === 0;
+    const { allAddedUrls } = appState.links;
     const isLinkInList = allAddedUrls.has(value);
     const isLinkValid = validator.isURL(value) && !isLinkInList;
-    appState.typedLink.isValid = isLinkValid;
+    appState.links.typedLink.isValid = isLinkValid;
     if (isLinkValid) {
-      appState.feeds.lastValidUrl = value;
+      appState.links.lastValidUrl = value;
     }
   });
 
   addLinkBtn.addEventListener('click', (e) => {
     e.preventDefault();
     if (!e.target.disabled) {
-      const { allAddedUrls, workableUrls, lastValidUrl } = appState.feeds;
+      const { lastValidUrl, allAddedUrls } = appState.links;
       allAddedUrls.add(lastValidUrl);
-      workableUrls.add(lastValidUrl);
-      appState.feeds.lastAddedUrl = lastValidUrl;
-      appState.typedLink.isEmpty = true;
-      appState.typedLink.isValid = false;
+      appState.links.lastAddedUrl = lastValidUrl;
+      appState.links.typedLink.isEmpty = true;
+      appState.links.typedLink.isValid = false;
 
       axios.get(`https://cors-anywhere.herokuapp.com/${lastValidUrl}`)
         .then(processResponse)
-        .then(data => processRssData(data, appState, lastValidUrl))
-        .then((result) => {
-          processNews(...result);
-        })
+        .then(data => updateFeedsState(data, appState, lastValidUrl))
+        .then(result => processNews(...result))
         .catch((err) => {
-          alert(`Wrong news source or bad connection !\n${err}`); // eslint-disable-line
+          alert(`Incorrect URL or bad internet connection !\n${err}`); // eslint-disable-line
           throw new Error(err);
         });
     }
@@ -110,7 +109,8 @@ export default () => {
           throw new Error(err);
         });
     });
-    setTimeout(getFreshNews, 20000);
+    setTimeout(getFreshNews, 30000);
   };
-  getFreshNews();
+
+  setTimeout(getFreshNews, 35000);
 };
