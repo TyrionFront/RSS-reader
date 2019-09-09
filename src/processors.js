@@ -26,11 +26,16 @@ export const processResponse = (response) => {
 export const updateFeedsState = ({ newsList, info }, appState, feedUrl) => {
   const [title, description] = info;
   const {
-    workableUrls, rssInfo,
+    allAddedUrls, rssInfo,
   } = appState.feeds;
 
+<<<<<<< HEAD
   workableUrls.add(feedUrl);
   const feedId = `rssFeed${workableUrls.size}`;
+=======
+  allAddedUrls.add(feedUrl);
+  const feedId = `rssFeed${allAddedUrls.size}`;
+>>>>>>> 6c6e578f431551a1617d1732f86cd2788b54ebb9
   appState.feeds
     .rssInfo = {
       ...rssInfo,
