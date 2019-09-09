@@ -15,8 +15,7 @@ export const processResponse = (response) => {
       return buffer.textContent;
     });
   const newsList = newsTitles
-    .map(({ textContent }, i) => [textContent,
-      newsLinks[i].textContent, newsDescriptions[i]])
+    .map(({ textContent }, i) => [textContent, newsLinks[i].textContent, newsDescriptions[i]])
     .reverse();
 
   const title = data.querySelector('channel title').textContent;
