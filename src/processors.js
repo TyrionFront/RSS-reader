@@ -11,8 +11,7 @@ export const processResponse = (response) => {
       return buffer.textContent;
     });
   const newsList = newsTitles
-    .map(({ textContent }, i) => [textContent,
-      newsLinks[i].textContent, newsDescriptions[i]])
+    .map(({ textContent }, i) => [textContent, newsLinks[i].textContent, newsDescriptions[i]])
     .reverse();
 
   const title = data.querySelector('channel title').textContent;
@@ -20,13 +19,14 @@ export const processResponse = (response) => {
   return { info: [title, description], newsList };
 };
 
-export const processRssData = ({ newsList, info }, appState, feedUrl) => {
+export const updateFeedsState = ({ newsList, info }, appState, feedUrl) => {
   const [title, description] = info;
   const {
-    workableUrls, rssInfo,
+    allAddedUrls, rssInfo,
   } = appState.feeds;
 
-  const feedId = `rssFeed${workableUrls.size}`;
+  allAddedUrls.add(feedUrl);
+  const feedId = `rssFeed${allAddedUrls.size}`;
   appState.feeds
     .rssInfo = {
       ...rssInfo,
