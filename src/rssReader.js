@@ -27,6 +27,7 @@ export default () => {
       items: {
         freshNews: {},
         allNews: {},
+        allNewsTitles: new Map(),
       },
     },
   };
@@ -36,6 +37,7 @@ export default () => {
   const newsTag = document.getElementById('news');
   const rssExample = document.getElementById('rssExample');
   const storyExample = document.getElementById('storyExample');
+  const domParser = new DOMParser(); // eslint-disable-line no-undef
 
   const markActive = ({ currentTarget }) => {
     const { activeFeedId } = appState.feeds;
@@ -77,6 +79,22 @@ export default () => {
     }
   });
 
+  const getFreshNews = () => {
+    const { rssInfo } = appState.feeds;
+    Object.keys(rssInfo).forEach((feedId) => {
+      const { link } = rssInfo[feedId];
+      axios.get(`https://cors-anywhere.herokuapp.com/${link}`)
+        .then(response => processResponse(response, domParser))
+        .then(data => processNews(data.newsList, feedId, appState))
+        .catch((err) => {
+          alert(`Refreshing failed:\n ${err}`); // eslint-disable-line
+          throw new Error(err);
+        });
+    });
+    setTimeout(getFreshNews, 30000);
+  };
+  let refreshingIsNotStarted = true;
+
   addLinkBtn.addEventListener('click', (e) => {
     e.preventDefault();
     if (!e.target.disabled) {
@@ -87,30 +105,19 @@ export default () => {
       appState.links.typedLink.isValid = false;
 
       axios.get(`https://cors-anywhere.herokuapp.com/${lastValidUrl}`)
-        .then(processResponse)
+        .then(response => processResponse(response, domParser))
         .then(data => updateFeedsState(data, appState, lastValidUrl))
-        .then(result => processNews(...result))
+        .then((result) => {
+          processNews(...result);
+          if (refreshingIsNotStarted) {
+            refreshingIsNotStarted = false;
+            setTimeout(getFreshNews, 30000);
+          }
+        })
         .catch((err) => {
           alert(`Incorrect URL or bad internet connection !\n${err}`); // eslint-disable-line
           throw new Error(err);
         });
     }
   });
-
-  const getFreshNews = () => {
-    const { rssInfo } = appState.feeds;
-    Object.keys(rssInfo).forEach((feedId) => {
-      const { link } = rssInfo[feedId];
-      axios.get(`https://cors-anywhere.herokuapp.com/${link}`)
-        .then(processResponse)
-        .then(data => processNews(data.newsList, feedId, appState))
-        .catch((err) => {
-          alert(`Refreshing failed:\n ${err}`); // eslint-disable-line
-          throw new Error(err);
-        });
-    });
-    setTimeout(getFreshNews, 30000);
-  };
-
-  setTimeout(getFreshNews, 35000);
 };

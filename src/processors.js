@@ -1,6 +1,5 @@
 /* eslint-disable no-param-reassign */
-export const processResponse = (response) => {
-  const domParser = new DOMParser(); // eslint-disable-line no-undef
+export const processResponse = (response, domParser) => {
   const data = domParser.parseFromString(response.data, 'application/xml');
   const parserError = data.querySelector('parsererror');
   if (parserError) {
@@ -44,27 +43,29 @@ export const updateFeedsState = ({ newsList, info }, appState, feedUrl) => {
   return [newsList, feedId, appState];
 };
 
-export const processNews = (newsList, rssId, appState) => {
-  const { freshNews, allNews } = appState.feeds.items;
-  const prevFreshNews = freshNews[rssId] ? freshNews[rssId] : {};
-  allNews[rssId] = allNews[rssId] ? { ...allNews[rssId], ...prevFreshNews } : { ...prevFreshNews };
-  const feedNewsTitles = Object.keys(allNews[rssId]).reduce((acc, storyId) => {
-    const [title] = allNews[rssId][storyId];
-    return acc.add(title);
-  }, new Set());
+export const processNews = (newsList, feedId, appState) => {
+  const { freshNews, allNews, allNewsTitles } = appState.feeds.items;
+  const feedPrevNews = freshNews[feedId] ? freshNews[feedId] : {};
+  allNews[feedId] = allNews[feedId] ? { ...allNews[feedId], ...feedPrevNews } : { ...feedPrevNews };
+  const feedNewsTitles = allNewsTitles.has(feedId) ? allNewsTitles.get(feedId) : new Set();
 
   const feedNewsCount = feedNewsTitles.size;
-  const currentFreshNews = newsList.reduce((acc, story) => {
+  const feedFreshNews = newsList.reduce((acc, story) => {
     const freshNewsCount = Object.keys(acc).length;
     const [title, link, description] = story;
-    const storyId = `story${feedNewsCount + freshNewsCount + 1}${rssId}`;
-    return feedNewsTitles.has(title) || acc[storyId]
-      ? acc : { ...acc, [storyId]: [title, link, description] };
+    const storyId = `story${feedNewsCount + freshNewsCount + 1}${feedId}`;
+    if (feedNewsTitles.has(title)) {
+      return acc;
+    }
+    feedNewsTitles.add(title);
+    return { ...acc, [storyId]: [title, link, description] };
   }, {});
-  const currentFreshNewsCount = Object.keys(currentFreshNews).length;
-  const newFreshNews = { ...freshNews, [rssId]: currentFreshNews };
-  if (currentFreshNewsCount > 0) {
-    appState.feeds.lastFeedId = rssId;
-    appState.feeds.items.freshNews = newFreshNews;
+
+  const feedFreshNewsCount = Object.keys(feedFreshNews).length;
+  const updatedNews = { ...freshNews, [feedId]: feedFreshNews };
+  if (feedFreshNewsCount > 0) {
+    appState.feeds.lastFeedId = feedId;
+    appState.feeds.items.freshNews = updatedNews;
+    appState.feeds.items.allNewsTitles.set(feedId, feedNewsTitles);
   }
 };

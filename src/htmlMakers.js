@@ -20,12 +20,12 @@ export const makeRssFeedsList = ({ feeds }, feedsList, example, markActive) => {
 export const makeNewsList = ({ feeds }, newsTag, example) => {
   const { lastFeedId, activeFeedId, items } = feeds;
   const { freshNews, allNews } = items;
-  const [activeId, isSameId] = activeFeedId.split(' ');
+  const [activeId, sameIdMark] = activeFeedId.split(' ');
   const currentFeedAllNewsCount = Object.keys(allNews[lastFeedId]).length;
   const currentFeedFreshNews = freshNews[lastFeedId];
   const currentFreshNewsIds = Object.keys(currentFeedFreshNews);
   const badge = document.getElementById(`newsCount${lastFeedId}`);
-  const visualization = !activeId || isSameId || activeId === lastFeedId ? 'block' : 'none';
+  const visualization = !activeId || sameIdMark || activeId === lastFeedId ? 'block' : 'none';
   currentFreshNewsIds.forEach((storyId) => {
     const [title, link, description] = currentFeedFreshNews[storyId];
     const li = $(example).clone(true);
