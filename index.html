@@ -12,13 +12,13 @@
 
 <body style="background: no-repeat url(../img/businessman.png); background-size: cover;
   background-attachment: fixed; height: 100vh;">
-  <div class="container-fluid" style="width: 100%">
+  <div class="container-fluid">
     <div class="row">
       <div class="col-4" style="min-height: 250px">
-        <h5 class="title" style="text-align: center; font-weight: bold; color: white">Feeds</h5>
+        <h5 class="title text-center text-light font-weight-bold">Feeds</h5>
         <hr>
         <ul class="list-group" id="rssFeeds" style="position: absolute; left: 15px; right: 15px;
-          max-height: 80vh;
+          max-height: calc(100vh - 120px);
           overflow: scroll;
           overflow-x: hidden;
           scrollbar-width: none;">
@@ -38,9 +38,9 @@
         </button>
       </div>
       <div class="col-8" style="border-left: 2px solid rgb(47, 130, 255);">
-        <h5 class="title" style="text-align: center; font-weight: bold; color: white">News</h5>
+        <h5 class="title text-center text-light font-weight-bold">News</h5>
         <hr>
-        <ul class="list-group" id="news" style="max-height: 89vh; margin-bottom: 10px; overflow: scroll;
+        <ul class="list-group" id="news" style="max-height: calc(100vh - 70px); margin-bottom: 10px; overflow: scroll;
         overflow-x: hidden;
         display: none;">
           <li class="list-group-item rounded border" id="storyExample" style="margin-bottom: 5px">
