@@ -12,4 +12,4 @@ build:
 	NODE_ENV=development npx webpack
 	cp CNAME dist/
 	mkdir dist/img
-	cp img/businessman.png dist/img/businessman.png
+	cp img/freshNews.jpg dist/img/freshNews.jpg
