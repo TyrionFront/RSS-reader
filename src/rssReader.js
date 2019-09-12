@@ -80,6 +80,7 @@ export default () => {
   });
 
   const getFreshNews = () => {
+    // console.log(`refreshing: ${new Date()}`);
     const { rssInfo } = appState.feeds;
     Object.keys(rssInfo).forEach((feedId) => {
       const { link } = rssInfo[feedId];

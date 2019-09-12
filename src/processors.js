@@ -64,6 +64,7 @@ export const processNews = (newsList, feedId, appState) => {
   const feedFreshNewsCount = Object.keys(feedFreshNews).length;
   const updatedNews = { ...freshNews, [feedId]: feedFreshNews };
   if (feedFreshNewsCount > 0) {
+    // console.log(`${new Date()} -- ${Object.keys(feedFreshNews)}`);
     appState.feeds.lastFeedId = feedId;
     appState.feeds.items.freshNews = updatedNews;
     appState.feeds.items.allNewsTitles.set(feedId, feedNewsTitles);
