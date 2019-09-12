@@ -30,6 +30,7 @@ export const updateFeedsState = ({ newsList, info }, appState, feedUrl) => {
 
   workableUrls.add(feedUrl);
   const feedId = `rssFeed${workableUrls.size}`;
+  appState.feeds.lastFeedId = feedId;
   appState.feeds
     .rssInfo = {
       ...rssInfo,
@@ -52,21 +53,20 @@ export const processNews = (newsList, feedId, appState) => {
   const feedNewsCount = feedNewsTitles.size;
   const feedFreshNews = newsList.reduce((acc, story) => {
     const freshNewsCount = Object.keys(acc).length;
-    const [title, link, description] = story;
+    const [title] = story;
     const storyId = `story${feedNewsCount + freshNewsCount + 1}${feedId}`;
     if (feedNewsTitles.has(title)) {
       return acc;
     }
     feedNewsTitles.add(title);
-    return { ...acc, [storyId]: [title, link, description] };
+    return { ...acc, [storyId]: story };
   }, {});
 
   const feedFreshNewsCount = Object.keys(feedFreshNews).length;
-  const updatedNews = { ...freshNews, [feedId]: feedFreshNews };
   if (feedFreshNewsCount > 0) {
     // console.log(`${new Date()} -- ${Object.keys(feedFreshNews)}`);
-    appState.feeds.lastFeedId = feedId;
+    const updatedNews = { ...freshNews, [feedId]: feedFreshNews, lastFeedWithNews: feedId };
     appState.feeds.items.freshNews = updatedNews;
-    appState.feeds.items.allNewsTitles.set(feedId, feedNewsTitles);
+    allNewsTitles.set(feedId, feedNewsTitles);
   }
 };

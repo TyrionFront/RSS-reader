@@ -18,19 +18,21 @@ export const makeRssFeedsList = ({ feeds }, feedsList, example, markActive) => {
 };
 
 export const makeNewsList = ({ feeds }, newsTag, example) => {
-  const { lastFeedId, activeFeedId, items } = feeds;
-  const { freshNews, allNews } = items;
+  const { activeFeedId, items } = feeds;
+  const { freshNews, allNewsTitles } = items;
+  const { lastFeedWithNews } = freshNews;
   const [activeId, sameIdMark] = activeFeedId.split(' ');
-  const currentFeedAllNewsCount = Object.keys(allNews[lastFeedId]).length;
-  const currentFeedFreshNews = freshNews[lastFeedId];
+
+  const currentFeedAllNewsCount = allNewsTitles.get(lastFeedWithNews).size;
+  const currentFeedFreshNews = freshNews[lastFeedWithNews];
   const currentFreshNewsIds = Object.keys(currentFeedFreshNews);
-  const badge = document.getElementById(`newsCount${lastFeedId}`);
-  const visualization = !activeId || sameIdMark || activeId === lastFeedId ? 'block' : 'none';
+  const badge = document.getElementById(`newsCount${lastFeedWithNews}`);
+  const visualization = !activeId || sameIdMark || activeId === lastFeedWithNews ? 'block' : 'none';
   currentFreshNewsIds.forEach((storyId) => {
     const [title, link, description] = currentFeedFreshNews[storyId];
     const li = $(example).clone(true);
     li[0].id = storyId;
-    li.addClass(lastFeedId);
+    li.addClass(lastFeedWithNews);
     li.css('display', visualization);
     li.find('a').attr('href', link).text(title);
     li.find('.btn-outline-info').attr('data-target', `#modal${storyId}`);
@@ -41,7 +43,7 @@ export const makeNewsList = ({ feeds }, newsTag, example) => {
   });
   example.style.display = 'none'; // eslint-disable-line no-param-reassign
   newsTag.style.display = 'block'; // eslint-disable-line no-param-reassign
-  badge.textContent = currentFreshNewsIds.length + currentFeedAllNewsCount;
+  badge.textContent = currentFeedAllNewsCount;
 };
 
 export const displayNews = ({ feeds }, newsListTag) => {
