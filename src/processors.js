@@ -1,13 +1,18 @@
 /* eslint-disable no-param-reassign */
-export const processResponse = (response, domParser) => {
+export const parseResponse = (response) => {
+  const domParser = new DOMParser();
   const data = domParser.parseFromString(response.data, 'application/xml');
   const parserError = data.querySelector('parsererror');
   if (parserError) {
-    throw new Error('No rss found !\n Parser error: data format in not \'application/rss+xml\'');
+    throw new Error('data format is not \'application/rss+xml\'');
   }
+  return data;
+};
+
+export const processData = (data) => {
   const newsTitles = [...data.querySelectorAll('item title')];
   const newsLinks = [...data.querySelectorAll('item link')];
-  const buffer = document.createElement('div'); // eslint-disable-line no-undef
+  const buffer = document.createElement('div');
   const newsDescriptions = [...data.querySelectorAll('item description')]
     .map((elem) => { // in case if there is html-tags in previously parsed text
       buffer.innerHTML = elem.textContent;
@@ -45,28 +50,30 @@ export const updateFeedsState = ({ newsList, info }, appState, feedUrl) => {
 };
 
 export const processNews = (newsList, feedId, appState) => {
-  const { freshNews, allNews, allNewsTitles } = appState.feeds.items;
-  const feedPrevNews = freshNews[feedId] ? freshNews[feedId] : {};
-  allNews[feedId] = allNews[feedId] ? { ...allNews[feedId], ...feedPrevNews } : { ...feedPrevNews };
+  const {
+    allNews, allNewsTitles, freshNews,
+  } = appState.feeds.items;
+  const { currentFeedWithNews, ...prevNews } = freshNews;
+  allNews[currentFeedWithNews] = allNews[currentFeedWithNews]
+    ? { ...allNews[currentFeedWithNews], ...prevNews } : { ...prevNews };
   const feedNewsTitles = allNewsTitles.has(feedId) ? allNewsTitles.get(feedId) : new Set();
 
   const feedNewsCount = feedNewsTitles.size;
   const feedFreshNews = newsList.reduce((acc, story) => {
     const freshNewsCount = Object.keys(acc).length;
     const [title] = story;
-    const storyId = `story${feedNewsCount + freshNewsCount + 1}${feedId}`;
     if (feedNewsTitles.has(title)) {
       return acc;
     }
     feedNewsTitles.add(title);
+    const storyId = `story${feedNewsCount + freshNewsCount + 1}${feedId}`;
     return { ...acc, [storyId]: story };
   }, {});
 
   const feedFreshNewsCount = Object.keys(feedFreshNews).length;
   if (feedFreshNewsCount > 0) {
-    // console.log(`${new Date()} -- ${Object.keys(feedFreshNews)}`);
-    const updatedNews = { ...freshNews, [feedId]: feedFreshNews, lastFeedWithNews: feedId };
-    appState.feeds.items.freshNews = updatedNews;
+    console.log(`${new Date()} -- ${Object.keys(feedFreshNews)} -- ${feedId}`);
     allNewsTitles.set(feedId, feedNewsTitles);
+    appState.feeds.items.freshNews = { ...feedFreshNews, currentFeedWithNews: feedId };
   }
 };

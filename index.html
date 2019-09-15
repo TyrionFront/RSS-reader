@@ -10,7 +10,7 @@
   </style>
 </head>
 
-<body style="background: no-repeat url(../img/freshNews.jpg); background-size: cover;
+<body style="background: no-repeat url(./img/freshNews.jpg); background-size: cover;
   background-attachment: fixed; height: 100vh;">
   <div class="container-fluid">
     <div class="row">
@@ -68,14 +68,14 @@
           <div class="modal-dialog modal-dialog-centered" role="document">
             <div class="modal-content">
               <div class="jumbotron" style="margin: 2%">
-                <form>
-                  <input class="form-control" type="text" placeholder="Input rss-URL" aria-label="Search" autofocus>
+                <form id="addRss" class="needs-validation" novalidate>
+                  <input class="form-control" id="urlField" type="text" placeholder="Input rss-URL">
+                  <div class="invalid-feedback" style="display: none;">
+                    Warning message
+                  </div>
                   <button class="btn btn-outline-primary btn-sm btn-block my-sm-2" type="submit" disabled>
                     add rss-link
                   </button>
-                  <button type="button" class="btn btn-outline-secondary btn-sm" data-dismiss="modal" style="width: 50%;
-                    position: relative;
-                    left: 25%;">cancel</button>
                 </form>
               </div>
             </div>

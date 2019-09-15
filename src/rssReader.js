@@ -1,11 +1,10 @@
-/* global document */
-/* eslint no-undef: "error" */
-
 import axios from 'axios';
 import { watch } from 'melanke-watchjs';
 import validator from 'validator';
-import { processResponse, updateFeedsState, processNews } from './processors';
-import { makeRssFeedsList, makeNewsList, displayNews } from './htmlMakers';
+import {
+  parseResponse, processData, updateFeedsState, processNews,
+} from './processors';
+import { makeRssFeedElem, makeNewsList, displayNews } from './htmlMakers';
 
 export default () => {
   const appState = {
@@ -14,9 +13,14 @@ export default () => {
         isEmpty: true,
         isValid: false,
       },
+      urlToCheck: '',
       lastValidUrl: '',
       lastAddedUrl: '',
       allAddedUrls: new Set(),
+    },
+    warning: {
+      isExist: false,
+      warningMessage: '',
     },
     feeds: {
       lastFeedId: '',
@@ -26,7 +30,7 @@ export default () => {
       prevActiveFeedId: '',
       items: {
         freshNews: {
-          lastFeedWithNews: '',
+          currentFeedWithNews: '',
         },
         allNews: {},
         allNewsTitles: new Map(),
@@ -34,12 +38,12 @@ export default () => {
     },
   };
 
-  const [inputField, addLinkBtn] = [...document.querySelector('.jumbotron form').children];
+  const addRssForm = document.getElementById('addRss');
+  const [inputField, warningNode, addLinkBtn] = [...addRssForm.children];
   const feedsTag = document.getElementById('rssFeeds');
   const newsTag = document.getElementById('news');
   const rssExample = document.getElementById('rssExample');
   const storyExample = document.getElementById('storyExample');
-  const domParser = new DOMParser(); // eslint-disable-line no-undef
 
   const markActive = ({ currentTarget }) => {
     const { activeFeedId } = appState.feeds;
@@ -49,8 +53,21 @@ export default () => {
   };
 
   watch(appState.links, 'typedLink', () => {
-    inputField.classList.toggle('border-danger');
+    inputField.classList.toggle('is-invalid');
     addLinkBtn.disabled = !appState.links.typedLink.isValid;
+  });
+
+  watch(appState.links.typedLink, 'isValid', () => {
+    inputField.classList.toggle('is-valid');
+  });
+
+  watch(appState.warning, 'isExist', () => {
+    warningNode.innerText = appState.warning.warningMessage;
+    warningNode.style.display = 'block';
+  });
+
+  watch(appState.warning, 'warningMessage', () => {
+    warningNode.style.display = 'none';
   });
 
   watch(appState.links, 'lastAddedUrl', () => {
@@ -58,7 +75,7 @@ export default () => {
   });
 
   watch(appState.feeds, 'rssInfo', () => {
-    makeRssFeedsList(appState, feedsTag, rssExample, markActive);
+    makeRssFeedElem(appState, feedsTag, rssExample, markActive);
   });
 
   watch(appState.feeds.items, 'freshNews', () => {
@@ -70,6 +87,10 @@ export default () => {
   });
 
   inputField.addEventListener('input', ({ target }) => {
+    const { warningMessage } = appState.warning;
+    if (warningMessage) {
+      appState.warning.warningMessage = '';
+    }
     const { value } = target;
     appState.links.typedLink.isEmpty = value.length === 0;
     const { allAddedUrls } = appState.links;
@@ -82,13 +103,14 @@ export default () => {
   });
 
   const getFreshNews = () => {
-    // console.log(`refreshing: ${new Date()}`);
     const { rssInfo } = appState.feeds;
     Object.keys(rssInfo).forEach((feedId) => {
+      console.log(`refreshing: ${new Date()} -- ${feedId}`);
       const { link } = rssInfo[feedId];
       axios.get(`https://cors-anywhere.herokuapp.com/${link}`)
-        .then(response => processResponse(response, domParser))
-        .then(data => processNews(data.newsList, feedId, appState))
+        .then(parseResponse)
+        .then(processData)
+        .then(processedData => processNews(processedData.newsList, feedId, appState))
         .catch((err) => {
           alert(`Refreshing failed:\n ${err}`); // eslint-disable-line
           throw new Error(err);
@@ -98,29 +120,33 @@ export default () => {
   };
   let refreshingIsNotStarted = true;
 
-  addLinkBtn.addEventListener('click', (e) => {
+  addRssForm.addEventListener('submit', (e) => {
     e.preventDefault();
-    if (!e.target.disabled) {
-      const { lastValidUrl, allAddedUrls } = appState.links;
-      allAddedUrls.add(lastValidUrl);
-      appState.links.lastAddedUrl = lastValidUrl;
-      appState.links.typedLink.isEmpty = true;
-      appState.links.typedLink.isValid = false;
+    const { lastValidUrl, allAddedUrls } = appState.links;
+    allAddedUrls.add(lastValidUrl);
 
-      axios.get(`https://cors-anywhere.herokuapp.com/${lastValidUrl}`)
-        .then(response => processResponse(response, domParser))
-        .then(data => updateFeedsState(data, appState, lastValidUrl))
-        .then((result) => {
-          processNews(...result);
-          if (refreshingIsNotStarted) {
-            refreshingIsNotStarted = false;
-            setTimeout(getFreshNews, 30000);
-          }
-        })
-        .catch((err) => {
-          alert(`Incorrect URL or bad internet connection !\n${err}`); // eslint-disable-line
-          throw new Error(err);
-        });
-    }
+    axios.get(`https://cors-anywhere.herokuapp.com/${lastValidUrl}`)
+      .then(parseResponse)
+      .then((data) => {
+        appState.links.lastAddedUrl = lastValidUrl;
+        appState.links.typedLink.isEmpty = true;
+        appState.links.typedLink.isValid = false;
+        return processData(data);
+      })
+      .then(processedData => updateFeedsState(processedData, appState, lastValidUrl))
+      .then((result) => {
+        processNews(...result);
+        if (refreshingIsNotStarted) {
+          refreshingIsNotStarted = false;
+          setTimeout(getFreshNews, 30000);
+        }
+      })
+      .catch((err) => {
+        const { isExist } = appState.warning;
+        appState.warning.warningMessage = 'No rss found at this URL';
+        appState.links.typedLink.isValid = false;
+        appState.warning.isExist = !isExist;
+        throw new Error(err);
+      });
   });
 };

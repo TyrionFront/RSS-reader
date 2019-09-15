@@ -1,45 +1,69 @@
-/* global document */
-/* eslint no-undef: "error" */
-import $ from 'jquery';
+const setElementsDisplayProperty = (coll, value) => {
+  coll.forEach((elem) => {
+    elem.style.display = value; // eslint-disable-line no-param-reassign
+  });
+};
 
-export const makeRssFeedsList = ({ feeds }, feedsList, example, markActive) => {
+export const makeRssFeedElem = ({ feeds }, feedsList, example, markActive) => {
   const { rssInfo, lastFeedId } = feeds;
   const lastRssInfo = rssInfo[lastFeedId];
   const { title, description, newsCount } = lastRssInfo;
-  const newLi = $(example).clone(true);
+  const newFeedTag = example.cloneNode(false);
   example.style.display = 'none'; // eslint-disable-line no-param-reassign
-  newLi[0].id = lastFeedId;
-  newLi[0].addEventListener('click', markActive);
-  newLi.css('display', 'block');
-  newLi.find('h5').text(title);
-  newLi.find('p').text(description);
-  newLi.find('span.badge').attr('id', `newsCount${lastFeedId}`).text(newsCount);
-  newLi.prependTo(feedsList);
+
+  newFeedTag.id = lastFeedId;
+  newFeedTag.addEventListener('click', markActive);
+  newFeedTag.style.display = 'block';
+  newFeedTag.innerHTML = `
+    <div style="float: left; max-width: 90%">
+      <h5 class="mb-1">${title}</h5>
+      <p class="mb-1">${description}</p>
+    </div>
+    <span class="badge badge-success badge-pill" id="newsCount${lastFeedId}" style="float: right;">
+      ${newsCount}
+    </span>
+  `;
+  feedsList.prepend(newFeedTag);
 };
 
 export const makeNewsList = ({ feeds }, newsTag, example) => {
   const { activeFeedId, items } = feeds;
   const { freshNews, allNewsTitles } = items;
-  const { lastFeedWithNews } = freshNews;
+  const { currentFeedWithNews, ...currentNews } = freshNews;
   const [activeId, sameIdMark] = activeFeedId.split(' ');
 
-  const currentFeedAllNewsCount = allNewsTitles.get(lastFeedWithNews).size;
-  const currentFeedFreshNews = freshNews[lastFeedWithNews];
-  const currentFreshNewsIds = Object.keys(currentFeedFreshNews);
-  const badge = document.getElementById(`newsCount${lastFeedWithNews}`);
-  const visualization = !activeId || sameIdMark || activeId === lastFeedWithNews ? 'block' : 'none';
-  currentFreshNewsIds.forEach((storyId) => {
-    const [title, link, description] = currentFeedFreshNews[storyId];
-    const li = $(example).clone(true);
-    li[0].id = storyId;
-    li.addClass(lastFeedWithNews);
-    li.css('display', visualization);
-    li.find('a').attr('href', link).text(title);
-    li.find('.btn-outline-info').attr('data-target', `#modal${storyId}`);
-    li.find('.modal').attr('id', `modal${storyId}`);
-    li.find('.modal-title').attr('id', `title${storyId}`).text(title);
-    li.find('.modal-body').text(description);
-    li.prependTo(newsTag);
+  const currentFeedAllNewsCount = allNewsTitles.get(currentFeedWithNews).size;
+  const currentNewsIds = Object.keys(currentNews);
+  console.log(`${currentNewsIds} --- ${currentFeedWithNews}`);
+  const badge = document.getElementById(`newsCount${currentFeedWithNews}`);
+  const visualization = !activeId || sameIdMark || activeId === currentFeedWithNews ? 'block' : 'none';
+
+  currentNewsIds.forEach((storyId) => {
+    const [title, link, description] = currentNews[storyId];
+    const newStoryTag = example.cloneNode(false);
+    newStoryTag.id = storyId;
+    newStoryTag.classList.add(currentFeedWithNews);
+    newStoryTag.style.display = visualization;
+    newStoryTag.innerHTML = `
+      <a href="${link}">${title}</a>
+      <button type="button" class="btn btn-outline-info btn-sm" data-toggle="modal" data-target="#modal${storyId}"
+        style="margin-left: 5%;">read more</button>
+      <div class="modal fade bd-example-modal-lg" id="modal${storyId}" role="dialog" tabindex="-1"
+        aria-labelledby="modalCenterTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="title${storyId}">${title}</h5>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <div class="modal-body">${description}</div>
+          </div>
+        </div>
+      </div>
+    `;
+    newsTag.prepend(newStoryTag);
   });
   example.style.display = 'none'; // eslint-disable-line no-param-reassign
   newsTag.style.display = 'block'; // eslint-disable-line no-param-reassign
@@ -51,16 +75,18 @@ export const displayNews = ({ feeds }, newsListTag) => {
   const [currentId] = activeFeedId.split(' ');
   const prevFeed = document.querySelector('#rssFeeds .active');
   const currentFeed = document.getElementById(currentId);
-  const news = $(newsListTag).find('li');
+  const allNews = [...newsListTag.getElementsByTagName('li')];
   if (currentId === prevActiveFeedId) {
-    news.css('display', 'block');
+    setElementsDisplayProperty(allNews, 'block');
     currentFeed.classList.toggle('active');
     return;
   }
   if (prevFeed) {
     prevFeed.classList.remove('active');
   }
-  news.css('display', 'none');
+  setElementsDisplayProperty(allNews, 'none');
+
   currentFeed.classList.add('active');
-  $(newsListTag).find(`.${currentId}`).css('display', 'block');
+  const currentFeedNews = [...newsListTag.querySelectorAll(`.${currentId}`)];
+  setElementsDisplayProperty(currentFeedNews, 'block');
 };

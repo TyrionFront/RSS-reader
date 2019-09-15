@@ -5,11 +5,8 @@ install:
 	npm link
 
 lint:
-	npm run eslint .
+	npx eslint .
 
 build:
 	rm -rf dist
 	NODE_ENV=development npx webpack
-	cp CNAME dist/
-	mkdir dist/img
-	cp img/freshNews.jpg dist/img/freshNews.jpg
