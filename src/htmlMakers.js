@@ -78,7 +78,7 @@ export const displayNews = ({ feeds }, newsListTag) => {
   const allNews = [...newsListTag.getElementsByTagName('li')];
   if (currentId === prevActiveFeedId) {
     setElementsDisplayProperty(allNews, 'block');
-    currentFeed.classList.toggle('active');
+    currentFeed.classList.remove('active');
     return;
   }
   if (prevFeed) {
