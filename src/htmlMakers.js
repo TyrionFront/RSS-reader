@@ -4,7 +4,15 @@ const setElementsDisplayProperty = (coll, value) => {
   });
 };
 
+export const moveRssForm = ({ style }) => {
+  // eslint-disable-next-line no-param-reassign
+  style.cssText = `position: absolute; bottom: 0;
+  left: 15px; right: 15px;
+  margin-bottom: 10px; padding: 10px`;
+};
+
 export const makeRssFeedElem = ({ feeds }, feedsList, example, markActive) => {
+  // position: absolute; bottom: 0; left: 15px; right: 15px; - jumbotron
   const { rssInfo, lastFeedId } = feeds;
   const lastRssInfo = rssInfo[lastFeedId];
   const { title, description, newsCount } = lastRssInfo;

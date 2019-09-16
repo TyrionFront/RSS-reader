@@ -4,7 +4,9 @@ import validator from 'validator';
 import {
   parseResponse, processData, updateFeedsState, processNews,
 } from './processors';
-import { makeRssFeedElem, makeNewsList, displayNews } from './htmlMakers';
+import {
+  makeRssFeedElem, moveRssForm, makeNewsList, displayNews,
+} from './htmlMakers';
 
 export default () => {
   const appState = {
@@ -29,6 +31,7 @@ export default () => {
       activeFeedId: '',
       prevActiveFeedId: '',
       items: {
+        refreshingIsNotStarted: true,
         freshNews: {
           currentFeedWithNews: '',
         },
@@ -36,10 +39,14 @@ export default () => {
         allNewsTitles: new Map(),
       },
     },
+    rssFormState: {
+      atTheBottom: false,
+    },
   };
 
+  const formContainer = document.getElementById('jumbotron');
   const addRssForm = document.getElementById('addRss');
-  const [inputField, warningNode, addLinkBtn] = [...addRssForm.children];
+  const [addLinkBtn, inputField, warningNode] = [...addRssForm.children];
   const feedsTag = document.getElementById('rssFeeds');
   const newsTag = document.getElementById('news');
   const rssExample = document.getElementById('rssExample');
@@ -75,7 +82,11 @@ export default () => {
   });
 
   watch(appState.feeds, 'rssInfo', () => {
-    makeRssFeedElem(appState, feedsTag, rssExample, markActive);
+    makeRssFeedElem(appState, feedsTag, rssExample, addRssForm, markActive);
+  });
+
+  watch(appState.rssFormState, 'atTheBottom', () => {
+    moveRssForm(formContainer);
   });
 
   watch(appState.feeds.items, 'freshNews', () => {
@@ -104,25 +115,34 @@ export default () => {
 
   const getFreshNews = () => {
     const { rssInfo } = appState.feeds;
-    Object.keys(rssInfo).forEach((feedId) => {
+    const iter = ([feedId, ...rest]) => {
+      if (!feedId) {
+        return;
+      }
       console.log(`refreshing: ${new Date()} -- ${feedId}`);
       const { link } = rssInfo[feedId];
       axios.get(`https://cors-anywhere.herokuapp.com/${link}`)
         .then(parseResponse)
         .then(processData)
-        .then(processedData => processNews(processedData.newsList, feedId, appState))
+        .then((processedData) => {
+          processNews(processedData.newsList, feedId, appState);
+          iter(rest);
+        })
         .catch((err) => {
           alert(`Refreshing failed:\n ${err}`); // eslint-disable-line
           throw new Error(err);
         });
-    });
+    };
+    const feedIds = Object.keys(rssInfo);
+    iter(feedIds);
     setTimeout(getFreshNews, 30000);
   };
-  let refreshingIsNotStarted = true;
 
   addRssForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const { lastValidUrl, allAddedUrls } = appState.links;
+    const { refreshingIsNotStarted } = appState.feeds.items;
+    const { atTheBottom } = appState.rssFormState;
     allAddedUrls.add(lastValidUrl);
 
     axios.get(`https://cors-anywhere.herokuapp.com/${lastValidUrl}`)
@@ -133,11 +153,16 @@ export default () => {
         appState.links.typedLink.isValid = false;
         return processData(data);
       })
-      .then(processedData => updateFeedsState(processedData, appState, lastValidUrl))
+      .then((processedData) => {
+        if (!atTheBottom) {
+          appState.rssFormState.atTheBottom = true;
+        }
+        return updateFeedsState(processedData, appState, lastValidUrl);
+      })
       .then((result) => {
         processNews(...result);
         if (refreshingIsNotStarted) {
-          refreshingIsNotStarted = false;
+          appState.feeds.items.refreshingIsNotStarted = false;
           setTimeout(getFreshNews, 30000);
         }
       })

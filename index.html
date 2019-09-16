@@ -18,7 +18,7 @@
         <h5 class="title text-center text-light font-weight-bold">Feeds</h5>
         <hr>
         <ul class="list-group" id="rssFeeds" style="position: absolute; left: 15px; right: 15px;
-          max-height: calc(100vh - 120px);
+          max-height: calc(100vh - 150px);
           overflow: scroll;
           overflow-x: hidden;
           scrollbar-width: none;">
@@ -30,17 +30,11 @@
             <span class="badge badge-success badge-pill" style="float: right;">news count</span>
           </li>
         </ul>
-        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#newFeedModal" style="width: 91%;
-        position: absolute;
-        left: 4.5%;
-        bottom: 10px;">
-          <span>&#43;</span> add feed
-        </button>
       </div>
       <div class="col-8" style="border-left: 2px solid rgb(47, 130, 255);">
         <h5 class="title text-center text-light font-weight-bold">News</h5>
         <hr>
-        <ul class="list-group" id="news" style="max-height: calc(100vh - 70px); margin-bottom: 10px; overflow: scroll;
+        <ul class="list-group" id="news" style="max-height: calc(100vh - 150px); margin-bottom: 10px; overflow: scroll;
         overflow-x: hidden;
         display: none;">
           <li class="list-group-item rounded border" id="storyExample" style="margin-bottom: 5px">
@@ -63,25 +57,20 @@
             </div>
           </li>
         </ul>
-        <div class="modal fade" id="newFeedModal" tabindex="-1" role="dialog" aria-labelledby="modalCenterTitle"
-          aria-hidden="true">
-          <div class="modal-dialog modal-dialog-centered" role="document">
-            <div class="modal-content">
-              <div class="jumbotron" style="margin: 2%">
-                <form id="addRss" class="needs-validation" novalidate>
-                  <input class="form-control" id="urlField" type="text" placeholder="Input rss-URL">
-                  <div class="invalid-feedback" style="display: none;">
-                    Warning message
-                  </div>
-                  <button class="btn btn-outline-primary btn-sm btn-block my-sm-2" type="submit" disabled>
-                    add rss-link
-                  </button>
-                </form>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
+    </div>
+    <div class="jumbotron" id="jumbotron"
+      style="padding: 10px">
+      <form id="addRss" class="form-inline needs-validation" novalidate style="padding: 0">
+        <button class="btn btn-outline-primary btn-sm" type="submit" disabled style="margin-right: 10px; margin-left: 5px">
+          confirm adding rss
+        </button>
+        <input class="form-control" id="urlField" type="text" placeholder="Input rss-URL"
+          style="width: calc(100vw - 220px);">
+        <div class="invalid-feedback" style="display: none; margin-left: 150px">
+          Warning message
+        </div>
+      </form>
     </div>
   </div>
 </body>
