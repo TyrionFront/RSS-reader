@@ -133,35 +133,37 @@ export default () => {
   addRssForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const { lastValidUrl, allAddedUrls } = appState.links;
-    allAddedUrls.add(lastValidUrl);
 
-    axios.get(`https://cors-anywhere.herokuapp.com/${lastValidUrl}`)
-      .then(parseResponse)
-      .then((data) => {
-        appState.links.lastAddedUrl = lastValidUrl;
-        appState.links.typedLink.isEmpty = true;
-        appState.links.typedLink.isValid = false;
-        return processData(data);
-      })
-      .then((processedData) => {
-        if (!appState.rssFormState.atTheBottom) {
-          appState.rssFormState.atTheBottom = true;
-        }
-        return updateFeedsState(processedData, appState, lastValidUrl);
-      })
-      .then((result) => {
-        processNews(...result);
-        if (refreshingIsNotStarted) {
-          refreshingIsNotStarted = false;
-          setTimeout(getFreshNews, 30000);
-        }
-      })
-      .catch((err) => {
-        const { isExist } = appState.warning;
-        appState.warning.warningMessage = 'No rss found at this URL';
-        appState.links.typedLink.isValid = false;
-        appState.warning.isExist = !isExist;
-        throw new Error(err);
-      });
+    if (!allAddedUrls.has(lastValidUrl)) {
+      allAddedUrls.add(lastValidUrl);
+      axios.get(`https://cors-anywhere.herokuapp.com/${lastValidUrl}`)
+        .then(parseResponse)
+        .then((data) => {
+          appState.links.lastAddedUrl = lastValidUrl;
+          appState.links.typedLink.isEmpty = true;
+          appState.links.typedLink.isValid = false;
+          return processData(data);
+        })
+        .then((processedData) => {
+          if (!appState.rssFormState.atTheBottom) {
+            appState.rssFormState.atTheBottom = true;
+          }
+          return updateFeedsState(processedData, appState, lastValidUrl);
+        })
+        .then((result) => {
+          processNews(...result);
+          if (refreshingIsNotStarted) {
+            refreshingIsNotStarted = false;
+            setTimeout(getFreshNews, 30000);
+          }
+        })
+        .catch((err) => {
+          const { isExist } = appState.warning;
+          appState.warning.warningMessage = 'No rss found at this URL';
+          appState.links.typedLink.isValid = false;
+          appState.warning.isExist = !isExist;
+          throw new Error(err);
+        });
+    }
   });
 };
