@@ -31,7 +31,6 @@ export default () => {
       activeFeedId: '',
       prevActiveFeedId: '',
       items: {
-        refreshingIsNotStarted: true,
         freshNews: {
           currentFeedWithNews: '',
         },
@@ -81,12 +80,12 @@ export default () => {
     inputField.value = '';
   });
 
-  watch(appState.feeds, 'rssInfo', () => {
-    makeRssFeedElem(appState, feedsTag, rssExample, addRssForm, markActive);
-  });
-
   watch(appState.rssFormState, 'atTheBottom', () => {
     moveRssForm(formContainer);
+  });
+
+  watch(appState.feeds, 'rssInfo', () => {
+    makeRssFeedElem(appState, feedsTag, rssExample, markActive);
   });
 
   watch(appState.feeds.items, 'freshNews', () => {
@@ -115,34 +114,25 @@ export default () => {
 
   const getFreshNews = () => {
     const { rssInfo } = appState.feeds;
-    const iter = ([feedId, ...rest]) => {
-      if (!feedId) {
-        return;
-      }
+    Object.keys(rssInfo).forEach((feedId) => {
       console.log(`refreshing: ${new Date()} -- ${feedId}`);
       const { link } = rssInfo[feedId];
       axios.get(`https://cors-anywhere.herokuapp.com/${link}`)
         .then(parseResponse)
         .then(processData)
-        .then((processedData) => {
-          processNews(processedData.newsList, feedId, appState);
-          iter(rest);
-        })
+        .then(processedData => processNews(processedData.newsList, feedId, appState))
         .catch((err) => {
           alert(`Refreshing failed:\n ${err}`); // eslint-disable-line
           throw new Error(err);
         });
-    };
-    const feedIds = Object.keys(rssInfo);
-    iter(feedIds);
+    });
     setTimeout(getFreshNews, 30000);
   };
+  let refreshingIsNotStarted = true;
 
   addRssForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const { lastValidUrl, allAddedUrls } = appState.links;
-    const { refreshingIsNotStarted } = appState.feeds.items;
-    const { atTheBottom } = appState.rssFormState;
     allAddedUrls.add(lastValidUrl);
 
     axios.get(`https://cors-anywhere.herokuapp.com/${lastValidUrl}`)
@@ -154,7 +144,7 @@ export default () => {
         return processData(data);
       })
       .then((processedData) => {
-        if (!atTheBottom) {
+        if (!appState.rssFormState.atTheBottom) {
           appState.rssFormState.atTheBottom = true;
         }
         return updateFeedsState(processedData, appState, lastValidUrl);
@@ -162,7 +152,7 @@ export default () => {
       .then((result) => {
         processNews(...result);
         if (refreshingIsNotStarted) {
-          appState.feeds.items.refreshingIsNotStarted = false;
+          refreshingIsNotStarted = false;
           setTimeout(getFreshNews, 30000);
         }
       })

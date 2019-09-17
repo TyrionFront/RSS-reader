@@ -12,7 +12,6 @@ export const moveRssForm = ({ style }) => {
 };
 
 export const makeRssFeedElem = ({ feeds }, feedsList, example, markActive) => {
-  // position: absolute; bottom: 0; left: 15px; right: 15px; - jumbotron
   const { rssInfo, lastFeedId } = feeds;
   const lastRssInfo = rssInfo[lastFeedId];
   const { title, description, newsCount } = lastRssInfo;
@@ -45,7 +44,9 @@ export const makeNewsList = ({ feeds }, newsTag, example) => {
   console.log(`${currentNewsIds} --- ${currentFeedWithNews}`);
   const badge = document.getElementById(`newsCount${currentFeedWithNews}`);
   const visualization = !activeId || sameIdMark || activeId === currentFeedWithNews ? 'block' : 'none';
-
+  if (example.hasAttribute('hidden')) {
+    example.removeAttribute('hidden');
+  }
   currentNewsIds.forEach((storyId) => {
     const [title, link, description] = currentNews[storyId];
     const newStoryTag = example.cloneNode(false);
@@ -73,7 +74,7 @@ export const makeNewsList = ({ feeds }, newsTag, example) => {
     `;
     newsTag.prepend(newStoryTag);
   });
-  example.style.display = 'none'; // eslint-disable-line no-param-reassign
+  example.hidden = true; // eslint-disable-line no-param-reassign
   newsTag.style.display = 'block'; // eslint-disable-line no-param-reassign
   badge.textContent = currentFeedAllNewsCount;
 };
@@ -86,7 +87,7 @@ export const displayNews = ({ feeds }, newsListTag) => {
   const allNews = [...newsListTag.getElementsByTagName('li')];
   if (currentId === prevActiveFeedId) {
     setElementsDisplayProperty(allNews, 'block');
-    currentFeed.classList.remove('active');
+    currentFeed.classList.toggle('active');
     return;
   }
   if (prevFeed) {
