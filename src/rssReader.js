@@ -15,7 +15,6 @@ export default () => {
         isEmpty: true,
         isValid: false,
       },
-      urlToCheck: '',
       lastValidUrl: '',
       lastAddedUrl: '',
       allAddedUrls: new Set(),
