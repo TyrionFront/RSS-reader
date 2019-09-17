@@ -2,7 +2,7 @@ import axios from 'axios';
 import { watch } from 'melanke-watchjs';
 import validator from 'validator';
 import {
-  parseResponse, processData, updateFeedsState, processNews,
+  parseResponse, processData, updateFeedsState, processNews, getFreshNews, refreshFeed,
 } from './processors';
 import {
   makeRssFeedElem, moveRssForm, makeNewsList, displayNews,
@@ -36,6 +36,7 @@ export default () => {
         allNews: {},
         allNewsTitles: new Map(),
       },
+      refreshingIsNotStarted: true,
     },
     rssFormState: {
       atTheBottom: false,
@@ -111,23 +112,6 @@ export default () => {
     }
   });
 
-  const getFreshNews = () => {
-    const { rssInfo } = appState.feeds;
-    Object.keys(rssInfo).forEach((feedId) => {
-      console.log(`refreshing: ${new Date()} -- ${feedId}`);
-      const { link } = rssInfo[feedId];
-      axios.get(`https://cors-anywhere.herokuapp.com/${link}`)
-        .then(parseResponse)
-        .then(processData)
-        .then(processedData => processNews(processedData.newsList, feedId, appState))
-        .catch((err) => {
-          alert(`Refreshing failed:\n ${err}`); // eslint-disable-line
-          throw new Error(err);
-        });
-    });
-    setTimeout(getFreshNews, 30000);
-  };
-  let refreshingIsNotStarted = true;
 
   addRssForm.addEventListener('submit', (e) => {
     e.preventDefault();
@@ -151,9 +135,9 @@ export default () => {
         })
         .then((result) => {
           processNews(...result);
-          if (refreshingIsNotStarted) {
-            refreshingIsNotStarted = false;
-            setTimeout(getFreshNews, 30000);
+          if (appState.feeds.refreshingIsNotStarted) {
+            appState.feeds.refreshingIsNotStarted = false;
+            setTimeout(getFreshNews, 30000, appState, axios, refreshFeed);
           }
         })
         .catch((err) => {
