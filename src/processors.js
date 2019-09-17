@@ -78,12 +78,17 @@ export const processNews = (newsList, feedId, appState) => {
   }
 };
 
-export const refreshFeed = (rssInfo, feedId, appState, axios) => {
+export const refreshFeed = ([feedId, ...rest], rssInfo, appState, axios) => {
+  if (!feedId) {
+    return;
+  }
+  console.log(`${new Date()} --- ${feedId} -- refresh`);
   const { link } = rssInfo[feedId];
   axios.get(`https://cors-anywhere.herokuapp.com/${link}`)
     .then(parseResponse)
     .then(processData)
     .then(processedData => processNews(processedData.newsList, feedId, appState))
+    .then(() => refreshFeed(rest, rssInfo, appState, axios))
     .catch((err) => {
       alert(`Refreshing failed:\n ${err}`); // eslint-disable-line
       throw new Error(err);
@@ -93,9 +98,6 @@ export const refreshFeed = (rssInfo, feedId, appState, axios) => {
 export const getFreshNews = (state, axios, refreshFn) => {
   const { rssInfo } = state.feeds;
   const feedIds = Object.keys(rssInfo);
-  feedIds.forEach((feedId) => {
-    console.log(`${new Date()} --- ${feedId}`);
-    refreshFn(rssInfo, feedId, state, axios);
-  });
+  refreshFn(feedIds, rssInfo, state, axios);
   setTimeout(getFreshNews, 30000, state, axios, refreshFn);
 };
