@@ -53,11 +53,21 @@ export const processNews = (newsList, feedId, appState) => {
   const {
     allNews, allNewsTitles, freshNews,
   } = appState.feeds.items;
-  const { currentFeedWithNews, ...prevNews } = freshNews;
-  allNews[currentFeedWithNews] = allNews[currentFeedWithNews]
-    ? { ...allNews[currentFeedWithNews], ...prevNews } : { ...prevNews };
-  const feedNewsTitles = allNewsTitles.has(feedId) ? allNewsTitles.get(feedId) : new Set();
+  const prevNews = Object.keys(freshNews).reduce((acc, storyId) => {
+    const [feedMark] = storyId.split('-');
+    acc[feedMark] = acc[feedMark] ? { ...acc[feedMark], [storyId]: freshNews[storyId] }
+      : { [storyId]: freshNews[storyId] };
+    return acc;
+  }, {});
 
+  const newAllNews = Object.keys(prevNews).reduce((stories, feedMark) => {
+    stories[feedMark] = stories[feedMark] ? { ...stories[feedMark], ...prevNews[feedMark] }
+      : { ...prevNews[feedMark] };
+    return stories;
+  }, allNews);
+  appState.feeds.items.allNews = newAllNews;
+
+  const feedNewsTitles = allNewsTitles.has(feedId) ? allNewsTitles.get(feedId) : new Set();
   const feedNewsCount = feedNewsTitles.size;
   const feedFreshNews = newsList.reduce((acc, story) => {
     const freshNewsCount = Object.keys(acc).length;
@@ -66,31 +76,39 @@ export const processNews = (newsList, feedId, appState) => {
       return acc;
     }
     feedNewsTitles.add(title);
-    const storyId = `story${feedNewsCount + freshNewsCount + 1}${feedId}`;
+    const storyId = `${feedId}-story${feedNewsCount + freshNewsCount + 1}`;
     return { ...acc, [storyId]: story };
   }, {});
 
-  const feedFreshNewsCount = Object.keys(feedFreshNews).length;
+  allNewsTitles.set(feedId, feedNewsTitles);
+  return feedFreshNews;
+};
+
+export const updateFreshNews = (freshNews, appState) => {
+  const feedFreshNewsCount = Object.keys(freshNews).length;
   if (feedFreshNewsCount > 0) {
-    console.log(`${new Date()} -- ${Object.keys(feedFreshNews)} -- ${feedId}`);
-    allNewsTitles.set(feedId, feedNewsTitles);
-    appState.feeds.items.freshNews = { ...feedFreshNews, currentFeedWithNews: feedId };
+    appState.feeds.items.freshNews = { ...freshNews };
   }
 };
 
-export const refreshFeed = ([feedId, ...rest], rssInfo, appState, axios) => {
+export const refreshFeeds = ([feedId, ...restFeedIds], rssInfo, appState, axios, newsCol = {}) => {
   if (!feedId) {
+    updateFreshNews(newsCol, appState);
     return;
   }
-  console.log(`${new Date()} --- ${feedId} -- refresh`);
   const { link } = rssInfo[feedId];
   axios.get(`https://cors-anywhere.herokuapp.com/${link}`)
     .then(parseResponse)
     .then(processData)
     .then(processedData => processNews(processedData.newsList, feedId, appState))
-    .then(() => refreshFeed(rest, rssInfo, appState, axios))
+    .then((news) => {
+      const updatedNewsCol = { ...newsCol, ...news };
+      refreshFeeds(restFeedIds, rssInfo, appState, axios, updatedNewsCol);
+    })
     .catch((err) => {
-      alert(`Refreshing failed:\n ${err}`); // eslint-disable-line
+      const { isExist } = appState.warning.refreshing;
+      appState.warning.refreshing.warningMessage = `Refreshing failed !\n${err}`;
+      appState.warning.refreshing.isExist = !isExist;
       throw new Error(err);
     });
 };

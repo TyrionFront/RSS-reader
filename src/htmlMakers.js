@@ -36,22 +36,26 @@ export const makeRssFeedElem = ({ feeds }, feedsList, example, markActive) => {
 export const makeNewsList = ({ feeds }, newsTag, example) => {
   const { activeFeedId, items } = feeds;
   const { freshNews, allNewsTitles } = items;
-  const { currentFeedWithNews, ...currentNews } = freshNews;
   const [activeId, sameIdMark] = activeFeedId.split(' ');
+  const currentNewsIds = Object.keys(freshNews);
 
-  const currentFeedAllNewsCount = allNewsTitles.get(currentFeedWithNews).size;
-  const currentNewsIds = Object.keys(currentNews);
-  console.log(`${currentNewsIds} --- ${currentFeedWithNews}`);
-  const badge = document.getElementById(`newsCount${currentFeedWithNews}`);
-  const visualization = !activeId || sameIdMark || activeId === currentFeedWithNews ? 'block' : 'none';
   if (example.hasAttribute('hidden')) {
     example.removeAttribute('hidden');
   }
+  const badgeAndFeedIds = [...allNewsTitles.keys()].map(feeId => [feeId, `newsCount${feeId}`]);
+  badgeAndFeedIds.forEach(([feeId, badgeId]) => {
+    const currentFeedAllNewsCount = allNewsTitles.get(feeId).size;
+    document.getElementById(badgeId).textContent = currentFeedAllNewsCount;
+  });
+
   currentNewsIds.forEach((storyId) => {
-    const [title, link, description] = currentNews[storyId];
+    const [currentFeedId] = storyId.split('-');
+    const [title, link, description] = freshNews[storyId];
+    const visualization = !activeId || sameIdMark || activeId === currentFeedId ? 'block' : 'none';
+
     const newStoryTag = example.cloneNode(false);
     newStoryTag.id = storyId;
-    newStoryTag.classList.add(currentFeedWithNews);
+    newStoryTag.classList.add(currentFeedId);
     newStoryTag.style.display = visualization;
     newStoryTag.innerHTML = `
       <a href="${link}">${title}</a>
@@ -76,7 +80,6 @@ export const makeNewsList = ({ feeds }, newsTag, example) => {
   });
   example.hidden = true; // eslint-disable-line no-param-reassign
   newsTag.style.display = 'block'; // eslint-disable-line no-param-reassign
-  badge.textContent = currentFeedAllNewsCount;
 };
 
 export const displayNews = ({ feeds }, newsListTag) => {

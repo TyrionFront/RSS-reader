@@ -1,8 +1,10 @@
 import axios from 'axios';
 import { watch } from 'melanke-watchjs';
 import validator from 'validator';
+import $ from 'jquery';
 import {
-  parseResponse, processData, updateFeedsState, processNews, getFreshNews, refreshFeed,
+  parseResponse, processData, updateFeedsState, processNews,
+  getFreshNews, refreshFeeds, updateFreshNews,
 } from './processors';
 import {
   makeRssFeedElem, moveRssForm, makeNewsList, displayNews,
@@ -20,8 +22,14 @@ export default () => {
       allAddedUrls: new Set(),
     },
     warning: {
-      isExist: false,
-      warningMessage: '',
+      input: {
+        isExist: false,
+        warningMessage: '',
+      },
+      refreshing: {
+        isExist: false,
+        warningMessage: '',
+      },
     },
     feeds: {
       lastFeedId: '',
@@ -67,13 +75,17 @@ export default () => {
     inputField.classList.toggle('is-valid');
   });
 
-  watch(appState.warning, 'isExist', () => {
-    warningNode.innerText = appState.warning.warningMessage;
+  watch(appState.warning.input, 'isExist', () => {
+    warningNode.innerText = appState.warning.input.warningMessage;
     warningNode.style.display = 'block';
   });
 
-  watch(appState.warning, 'warningMessage', () => {
+  watch(appState.warning.input, 'warningMessage', () => {
     warningNode.style.display = 'none';
+  });
+
+  watch(appState.warning.refreshing, 'isExist', () => {
+    $('#refreshingFailed').text(appState.warning.refreshing.warningMessage).modal();
   });
 
   watch(appState.links, 'lastAddedUrl', () => {
@@ -97,9 +109,9 @@ export default () => {
   });
 
   inputField.addEventListener('input', ({ target }) => {
-    const { warningMessage } = appState.warning;
+    const { warningMessage } = appState.warning.input;
     if (warningMessage) {
-      appState.warning.warningMessage = '';
+      appState.warning.input.warningMessage = '';
     }
     const { value } = target;
     appState.links.typedLink.isEmpty = value.length === 0;
@@ -133,18 +145,21 @@ export default () => {
           }
           return updateFeedsState(processedData, appState, lastValidUrl);
         })
-        .then((result) => {
-          processNews(...result);
+        .then(result => processNews(...result))
+        .then((newsData) => {
+          updateFreshNews(newsData, appState);
           if (appState.feeds.refreshingIsNotStarted) {
             appState.feeds.refreshingIsNotStarted = false;
-            setTimeout(getFreshNews, 30000, appState, axios, refreshFeed);
+            setTimeout(getFreshNews, 30000, appState, axios, refreshFeeds);
           }
         })
         .catch((err) => {
-          const { isExist } = appState.warning;
-          appState.warning.warningMessage = 'No rss found at this URL';
-          appState.links.typedLink.isValid = false;
-          appState.warning.isExist = !isExist;
+          if (!err.toString().includes('Refreshing')) {
+            const { isExist } = appState.warning.input;
+            appState.warning.input.warningMessage = 'No rss found at this URL';
+            appState.links.typedLink.isValid = false;
+            appState.warning.input.isExist = !isExist;
+          }
           throw new Error(err);
         });
     }
