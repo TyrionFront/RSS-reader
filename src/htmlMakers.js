@@ -4,11 +4,11 @@ const setElementsDisplayProperty = (coll, value) => {
   });
 };
 
-export const moveRssForm = ({ style }) => {
-  // eslint-disable-next-line no-param-reassign
-  style.cssText = `position: absolute; bottom: 0;
-  left: 15px; right: 15px;
-  margin-bottom: 10px; padding: 10px`;
+export const moveRssForm = (formContainer) => {
+  const { classList, style } = formContainer;
+  classList.add('position-absolute');
+  style.cssText = `bottom: -1.5rem;
+  left: 1rem; right: 1rem;`;
 };
 
 export const makeRssFeedElem = ({ feeds }, feedsList, example, markActive) => {
@@ -16,7 +16,8 @@ export const makeRssFeedElem = ({ feeds }, feedsList, example, markActive) => {
   const lastRssInfo = rssInfo[lastFeedId];
   const { title, description, newsCount } = lastRssInfo;
   const newFeedTag = example.cloneNode(false);
-  example.style.display = 'none'; // eslint-disable-line no-param-reassign
+  const { style } = example;
+  style.display = 'none';
 
   newFeedTag.id = lastFeedId;
   newFeedTag.addEventListener('click', markActive);
