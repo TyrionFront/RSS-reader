@@ -22,11 +22,11 @@ export const makeRssFeedElem = ({ feeds }, feedsList, example, markActive) => {
   newFeedTag.addEventListener('click', markActive);
   newFeedTag.style.display = 'block';
   newFeedTag.innerHTML = `
-    <div style="float: left; max-width: 90%">
+    <div class="float-left" style="max-width: 90%">
       <h5 class="mb-1">${title}</h5>
       <p class="mb-1">${description}</p>
     </div>
-    <span class="badge badge-success badge-pill" id="newsCount${lastFeedId}" style="float: right;">
+    <span class="badge badge-success badge-pill float-right" id="newsCount${lastFeedId}">
       ${newsCount}
     </span>
   `;
@@ -59,8 +59,9 @@ export const makeNewsList = ({ feeds }, newsTag, example) => {
     newStoryTag.style.display = visualization;
     newStoryTag.innerHTML = `
       <a href="${link}">${title}</a>
-      <button type="button" class="btn btn-outline-info btn-sm" data-toggle="modal" data-target="#modal${storyId}"
-        style="margin-left: 5%;">read more</button>
+      <button type="button" class="btn btn-outline-info btn-sm ml-md-3" data-toggle="modal" data-target="#modal${storyId}">
+        read more
+      </button>
       <div class="modal fade bd-example-modal-lg" id="modal${storyId}" role="dialog" tabindex="-1"
         aria-labelledby="modalCenterTitle" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered" role="document">
@@ -79,7 +80,7 @@ export const makeNewsList = ({ feeds }, newsTag, example) => {
     newsTag.prepend(newStoryTag);
   });
   example.hidden = true; // eslint-disable-line no-param-reassign
-  newsTag.style.display = 'block'; // eslint-disable-line no-param-reassign
+  newsTag.classList.replace('d-none', 'd-block'); // eslint-disable-line no-param-reassign
 };
 
 export const displayNews = ({ feeds }, newsListTag) => {

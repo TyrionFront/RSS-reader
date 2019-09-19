@@ -1,15 +1,15 @@
 /* eslint-disable no-param-reassign */
-export const parseResponse = (response) => {
+export const parseResponse = (preParsedData, dataType) => {
   const domParser = new DOMParser();
-  const data = domParser.parseFromString(response.data, 'application/xml');
+  const postParsedData = domParser.parseFromString(preParsedData, dataType);
+  return postParsedData;
+};
+
+export const processData = (data) => {
   const parserError = data.querySelector('parsererror');
   if (parserError) {
     throw new Error('data format is not \'application/rss+xml\'');
   }
-  return data;
-};
-
-export const processData = (data) => {
   const newsTitles = [...data.querySelectorAll('item title')];
   const newsLinks = [...data.querySelectorAll('item link')];
   const buffer = document.createElement('div');
@@ -98,7 +98,7 @@ export const refreshFeeds = ([feedId, ...restFeedIds], rssInfo, appState, axios,
   }
   const { link } = rssInfo[feedId];
   axios.get(`https://cors-anywhere.herokuapp.com/${link}`)
-    .then(parseResponse)
+    .then(({ data }) => parseResponse(data, 'application/xml'))
     .then(processData)
     .then(processedData => processNews(processedData.newsList, feedId, appState))
     .then((news) => {

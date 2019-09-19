@@ -77,15 +77,17 @@ export default () => {
 
   watch(appState.warning.input, 'isExist', () => {
     warningNode.innerText = appState.warning.input.warningMessage;
-    warningNode.style.display = 'block';
+    warningNode.classList.replace('d-none', 'd-block');
   });
 
   watch(appState.warning.input, 'warningMessage', () => {
-    warningNode.style.display = 'none';
+    warningNode.classList.replace('d-block', 'd-none');
   });
 
   watch(appState.warning.refreshing, 'isExist', () => {
-    $('#refreshingFailed').text(appState.warning.refreshing.warningMessage).modal();
+    const modal = $('#refreshingFailed');
+    $('#refreshingFailed .modal-content').text(appState.warning.refreshing.warningMessage);
+    modal.modal();
   });
 
   watch(appState.links, 'lastAddedUrl', () => {
@@ -132,7 +134,7 @@ export default () => {
     if (!allAddedUrls.has(lastValidUrl)) {
       allAddedUrls.add(lastValidUrl);
       axios.get(`https://cors-anywhere.herokuapp.com/${lastValidUrl}`)
-        .then(parseResponse)
+        .then(({ data }) => parseResponse(data, 'application/xml'))
         .then((data) => {
           appState.links.lastAddedUrl = lastValidUrl;
           appState.links.typedLink.isEmpty = true;

@@ -17,30 +17,29 @@
       <div class="col-4" style="min-height: 250px">
         <h5 class="title text-center text-light font-weight-bold">Feeds</h5>
         <hr>
-        <ul class="list-group" id="rssFeeds" style="position: absolute; left: 15px; right: 15px;
+        <ul class="list-group mx-0" id="rssFeeds" style="
           max-height: calc(100vh - 150px);
           overflow: scroll;
           overflow-x: hidden;
           scrollbar-width: none;">
-          <li class="list-group-item list-group-item-action rounded border" id="rssExample" style="margin-bottom: 5px">
-            <div style="float: left; max-width: 90%">
+          <li class="list-group-item list-group-item-action rounded border mb-1" id="rssExample">
+            <div class="float-left" style="max-width: 90%">
               <h5 class="mb-1">RSS-feed title</h5>
               <p class="mb-1">rss-feed description</p>
             </div>
-            <span class="badge badge-success badge-pill" style="float: right;">news count</span>
+            <span class="badge badge-success badge-pill float-right">news count</span>
           </li>
         </ul>
       </div>
       <div class="col-8" style="border-left: 2px solid rgb(47, 130, 255);">
         <h5 class="title text-center text-light font-weight-bold">News</h5>
         <hr>
-        <ul class="list-group" id="news" style="max-height: calc(100vh - 150px); margin-bottom: 10px; overflow: scroll;
-        overflow-x: hidden;
-        display: none;">
-          <li class="list-group-item rounded border" id="storyExample" style="margin-bottom: 5px">
+        <ul class="list-group d-none" id="news" style="max-height: calc(100vh - 150px); overflow: scroll;
+        overflow-x: hidden;">
+          <li class="list-group-item rounded border mb-1" id="storyExample">
             <a href="#">Story title</a>
-            <button type="button" class="btn btn-outline-info btn-sm" data-toggle="modal" data-target="#storyId"
-              style="margin-left: 5%;">read more</button>
+            <button type="button" class="btn btn-outline-info btn-sm ml-3" data-toggle="modal" data-target="#storyId">
+              read more</button>
             <div class="modal fade bd-example-modal-lg" id="storyId" role="dialog" tabindex="-1"
               aria-labelledby="modalCenterTitle" aria-hidden="true">
               <div class="modal-dialog modal-dialog-centered" role="document">
@@ -59,23 +58,23 @@
         </ul>
       </div>
     </div>
-    <div class="jumbotron" id="jumbotron" style="padding: 10px">
-      <form id="addRss" class="form-inline needs-validation" novalidate style="padding: 0; position: relative;">
-        <button class="btn btn-outline-primary btn-sm" type="submit" disabled style="margin-left: 5px">
+    <div class="jumbotron p-2" id="jumbotron">
+      <form id="addRss" class="form-inline needs-validation position-relative p-0" novalidate>
+        <button class="btn btn-outline-primary btn-sm ml-1" type="submit" disabled>
           confirm adding rss
         </button>
-        <input class="form-control" id="urlField" type="text" placeholder="Input rss-URL"
-          style="width: calc(100% - 150px); position: relative; left: 10px;">
-        <div class="invalid-feedback" style="display: none; margin-left: 150px">
+        <input class="form-control position-relative ml-2" id="urlField" type="text" placeholder="Input rss-URL"
+          style="width: calc(100% - 150px);">
+        <div class="invalid-feedback d-none ml-5">
           Warning message
         </div>
       </form>
     </div>
 
-    <div class="modal fade bd-example-modal-sm tabindex="-1" role="dialog" aria-labelledby="refreshingFailed"
+    <div id="refreshingFailed" class="modal fade bd-example-modal-sm tabindex="-1" role="dialog" aria-labelledby="refreshingFailed"
       aria-hidden="true">
       <div class="modal-dialog modal-sm  modal-dialog-centered"">
-        <div id="refreshingFailed" class="modal-content" style="padding: 40px; text-align: center">
+        <div class="modal-content p-3 text-center">
           Warning message
         </div>
       </div>
