@@ -146,7 +146,7 @@ export default () => {
           }
           return updateFeedsState(processedData, appState, lastValidUrl);
         })
-        .then(result => processNews(...result))
+        .then(result => processNews(...result, appState))
         .then((newsData) => {
           updateFreshNews(newsData, appState);
           if (appState.feeds.refreshingIsNotStarted) {

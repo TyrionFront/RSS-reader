@@ -1,4 +1,3 @@
-/* eslint-disable no-param-reassign */
 export const parseResponse = (preParsedData, dataType) => {
   const domParser = new DOMParser();
   const postParsedData = domParser.parseFromString(preParsedData, dataType);
@@ -29,14 +28,13 @@ export const processData = (data) => {
 
 export const updateFeedsState = ({ newsList, info }, appState, feedUrl) => {
   const [title, description] = info;
-  const {
-    workableUrls, rssInfo,
-  } = appState.feeds;
+  const { feeds } = appState;
+  const { workableUrls, rssInfo } = feeds;
 
   workableUrls.add(feedUrl);
   const feedId = `rssFeed${workableUrls.size}`;
-  appState.feeds.lastFeedId = feedId;
-  appState.feeds
+  feeds.lastFeedId = feedId;
+  feeds
     .rssInfo = {
       ...rssInfo,
       [feedId]: {
@@ -46,13 +44,12 @@ export const updateFeedsState = ({ newsList, info }, appState, feedUrl) => {
         link: feedUrl,
       },
     };
-  return [newsList, feedId, appState];
+  return [newsList, feedId];
 };
 
 export const processNews = (newsList, feedId, appState) => {
-  const {
-    allNews, allNewsTitles, freshNews,
-  } = appState.feeds.items;
+  const { items } = appState.feeds;
+  const { allNews, allNewsTitles, freshNews } = items;
   const prevNews = Object.keys(freshNews).reduce((acc, storyId) => {
     const [feedMark] = storyId.split('-');
     acc[feedMark] = acc[feedMark] ? { ...acc[feedMark], [storyId]: freshNews[storyId] }
@@ -61,11 +58,11 @@ export const processNews = (newsList, feedId, appState) => {
   }, {});
 
   const newAllNews = Object.keys(prevNews).reduce((stories, feedMark) => {
-    stories[feedMark] = stories[feedMark] ? { ...stories[feedMark], ...prevNews[feedMark] }
+    const newStories = stories[feedMark] ? { ...stories[feedMark], ...prevNews[feedMark] }
       : { ...prevNews[feedMark] };
-    return stories;
+    return newStories;
   }, allNews);
-  appState.feeds.items.allNews = newAllNews;
+  items.allNews = newAllNews;
 
   const feedNewsTitles = allNewsTitles.has(feedId) ? allNewsTitles.get(feedId) : new Set();
   const feedNewsCount = feedNewsTitles.size;
@@ -86,36 +83,39 @@ export const processNews = (newsList, feedId, appState) => {
 
 export const updateFreshNews = (freshNews, appState) => {
   const feedFreshNewsCount = Object.keys(freshNews).length;
+  const { items } = appState.feeds;
   if (feedFreshNewsCount > 0) {
-    appState.feeds.items.freshNews = { ...freshNews };
+    items.freshNews = { ...freshNews };
   }
 };
 
-export const refreshFeeds = ([feedId, ...restFeedIds], rssInfo, appState, axios, newsCol = {}) => {
+export const refreshFeeds = (feedIds, rssInfo, appState, httpCli, newsCol = {}) => {
+  const [feedId, ...restFeedIds] = feedIds;
   if (!feedId) {
     updateFreshNews(newsCol, appState);
     return;
   }
+  const { warning } = appState;
   const { link } = rssInfo[feedId];
-  axios.get(`https://cors-anywhere.herokuapp.com/${link}`)
+  httpCli.get(`https://cors-anywhere.herokuapp.com/${link}`)
     .then(({ data }) => parseResponse(data, 'application/xml'))
     .then(processData)
     .then(processedData => processNews(processedData.newsList, feedId, appState))
     .then((news) => {
       const updatedNewsCol = { ...newsCol, ...news };
-      refreshFeeds(restFeedIds, rssInfo, appState, axios, updatedNewsCol);
+      refreshFeeds(restFeedIds, rssInfo, appState, httpCli, updatedNewsCol);
     })
     .catch((err) => {
-      const { isExist } = appState.warning.refreshing;
-      appState.warning.refreshing.warningMessage = `Refreshing failed !\n${err}`;
-      appState.warning.refreshing.isExist = !isExist;
+      const { isExist } = warning.refreshing;
+      warning.refreshing.warningMessage = `Refreshing failed !\n${err}`;
+      warning.refreshing.isExist = !isExist;
       throw new Error(err);
     });
 };
 
-export const getFreshNews = (state, axios, refreshFn) => {
+export const getFreshNews = (state, httpCli, refreshFn) => {
   const { rssInfo } = state.feeds;
   const feedIds = Object.keys(rssInfo);
-  refreshFn(feedIds, rssInfo, state, axios);
-  setTimeout(getFreshNews, 30000, state, axios, refreshFn);
+  refreshFn(feedIds, rssInfo, state, httpCli);
+  setTimeout(getFreshNews, 30000, state, httpCli, refreshFn);
 };
