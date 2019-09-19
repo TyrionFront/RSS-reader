@@ -38,9 +38,7 @@ export default () => {
       activeFeedId: '',
       prevActiveFeedId: '',
       items: {
-        freshNews: {
-          currentFeedWithNews: '',
-        },
+        freshNews: {},
         allNews: {},
         allNewsTitles: new Map(),
       },
