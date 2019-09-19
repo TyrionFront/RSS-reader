@@ -136,10 +136,11 @@ export default () => {
       axios.get(`https://cors-anywhere.herokuapp.com/${lastValidUrl}`)
         .then(({ data }) => parseResponse(data, 'application/xml'))
         .then((data) => {
+          const processedData = processData(data);
           appState.links.lastAddedUrl = lastValidUrl;
           appState.links.typedLink.isEmpty = true;
           appState.links.typedLink.isValid = false;
-          return processData(data);
+          return processedData;
         })
         .then((processedData) => {
           if (!appState.rssFormState.atTheBottom) {
