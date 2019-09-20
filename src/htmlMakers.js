@@ -1,13 +1,14 @@
 const setElementsDisplayProperty = (coll, value) => {
   coll.forEach((elem) => {
-    elem.style.display = value; // eslint-disable-line no-param-reassign
+    const { style } = elem;
+    style.display = value;
   });
 };
 
 export const moveRssForm = (formContainer) => {
   const { classList, style } = formContainer;
-  classList.add('position-absolute');
-  style.cssText = `bottom: -1.5rem;
+  classList.add('position-absolute', 'mb-2');
+  style.cssText = `bottom: 0;
   left: 1rem; right: 1rem;`;
 };
 
@@ -36,22 +37,21 @@ export const makeRssFeedElem = ({ feeds }, feedsList, example, markActive) => {
 
 export const makeNewsList = ({ feeds }, newsTag, example) => {
   const { activeFeedId, items } = feeds;
-  const { freshNews, allNewsTitles } = items;
+  const { freshNews, allNews } = items;
   const [activeId, sameIdMark] = activeFeedId.split(' ');
-  const currentNewsIds = Object.keys(freshNews);
 
   if (example.hasAttribute('hidden')) {
     example.removeAttribute('hidden');
   }
-  const badgeAndFeedIds = [...allNewsTitles.keys()].map(feeId => [feeId, `newsCount${feeId}`]);
+  const badgeAndFeedIds = [...allNews.keys()].map(feeId => [feeId, `newsCount${feeId}`]);
   badgeAndFeedIds.forEach(([feeId, badgeId]) => {
-    const currentFeedAllNewsCount = allNewsTitles.get(feeId).size;
+    const currentFeedAllNewsCount = allNews.get(feeId).size;
     document.getElementById(badgeId).textContent = currentFeedAllNewsCount;
   });
 
-  currentNewsIds.forEach((storyId) => {
+  freshNews.forEach((story, storyId) => {
     const [currentFeedId] = storyId.split('-');
-    const [title, link, description] = freshNews[storyId];
+    const [title, link, description] = story;
     const visualization = !activeId || sameIdMark || activeId === currentFeedId ? 'block' : 'none';
 
     const newStoryTag = example.cloneNode(false);
@@ -81,7 +81,10 @@ export const makeNewsList = ({ feeds }, newsTag, example) => {
     newsTag.prepend(newStoryTag);
   });
   example.hidden = true; // eslint-disable-line no-param-reassign
-  newsTag.classList.replace('d-none', 'd-block'); // eslint-disable-line no-param-reassign
+  const newsTagDisplaying = newsTag.classList;
+  if (newsTagDisplaying.contains('d-none')) {
+    newsTagDisplaying.replace('d-none', 'd-block');
+  }
 };
 
 export const displayNews = ({ feeds }, newsListTag) => {

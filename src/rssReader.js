@@ -3,7 +3,7 @@ import { watch } from 'melanke-watchjs';
 import validator from 'validator';
 import $ from 'jquery';
 import {
-  parseResponse, processData, updateFeedsState, processNews,
+  parseResponse, processParsedData, updateFeedsState, processNews,
   getFreshNews, refreshFeeds, updateFreshNews,
 } from './processors';
 import {
@@ -38,9 +38,9 @@ export default () => {
       activeFeedId: '',
       prevActiveFeedId: '',
       items: {
-        freshNews: {},
-        allNews: {},
-        allNewsTitles: new Map(),
+        freshNews: new Map(),
+        allNews: new Map(),
+        refreshingCount: 0,
       },
       refreshingIsNotStarted: true,
     },
@@ -100,7 +100,7 @@ export default () => {
     makeRssFeedElem(appState, feedsTag, rssExample, markActive);
   });
 
-  watch(appState.feeds.items, 'freshNews', () => {
+  watch(appState.feeds.items, 'refreshingCount', () => {
     makeNewsList(appState, newsTag, storyExample);
   });
 
@@ -134,24 +134,29 @@ export default () => {
       axios.get(`https://cors-anywhere.herokuapp.com/${lastValidUrl}`)
         .then(({ data }) => parseResponse(data, 'application/xml'))
         .then((data) => {
-          const processedData = processData(data);
+          const processedData = processParsedData(data);
           appState.links.lastAddedUrl = lastValidUrl;
           appState.links.typedLink.isEmpty = true;
           appState.links.typedLink.isValid = false;
           return processedData;
         })
-        .then((processedData) => {
+        .then(({ newsData, info }) => {
           if (!appState.rssFormState.atTheBottom) {
             appState.rssFormState.atTheBottom = true;
           }
-          return updateFeedsState(processedData, appState, lastValidUrl);
+          const { workableUrls, items } = appState.feeds;
+          workableUrls.add(lastValidUrl);
+          const feedId = `rssFeed${workableUrls.size}`;
+
+          const feedFreshNews = processNews(newsData, feedId, items);
+          updateFeedsState(info, appState, feedId, lastValidUrl);
+          return feedFreshNews;
         })
-        .then(result => processNews(...result, appState))
-        .then((newsData) => {
-          updateFreshNews(newsData, appState);
+        .then((newsColl) => {
+          updateFreshNews(newsColl, appState);
           if (appState.feeds.refreshingIsNotStarted) {
             appState.feeds.refreshingIsNotStarted = false;
-            setTimeout(getFreshNews, 30000, appState, axios, refreshFeeds);
+            setTimeout(getFreshNews, 10000, appState, axios, refreshFeeds);
           }
         })
         .catch((err) => {

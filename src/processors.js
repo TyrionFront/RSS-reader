@@ -4,7 +4,7 @@ export const parseResponse = (preParsedData, dataType) => {
   return postParsedData;
 };
 
-export const processData = (data) => {
+export const processParsedData = (data) => {
   const parserError = data.querySelector('parsererror');
   if (parserError) {
     throw new Error('data format is not \'application/rss+xml\'');
@@ -17,93 +17,61 @@ export const processData = (data) => {
       buffer.innerHTML = elem.textContent;
       return buffer.textContent;
     });
-  const newsList = newsTitles
+  const newsData = newsTitles
     .map(({ textContent }, i) => [textContent, newsLinks[i].textContent, newsDescriptions[i]])
     .reverse();
 
   const title = data.querySelector('channel title').textContent;
   const description = data.querySelector('channel description').textContent;
-  return { info: [title, description], newsList };
+  return { info: [title, description], newsData };
 };
 
-export const updateFeedsState = ({ newsList, info }, appState, feedUrl) => {
-  const [title, description] = info;
-  const { feeds } = appState;
-  const { workableUrls, rssInfo } = feeds;
-
-  workableUrls.add(feedUrl);
-  const feedId = `rssFeed${workableUrls.size}`;
-  feeds.lastFeedId = feedId;
-  feeds
-    .rssInfo = {
-      ...rssInfo,
-      [feedId]: {
-        title,
-        description,
-        newsCount: newsList.length,
-        link: feedUrl,
-      },
-    };
-  return [newsList, feedId];
-};
-
-export const processNews = (newsList, feedId, appState) => {
-  const { items } = appState.feeds;
-  const { allNews, allNewsTitles, freshNews } = items;
-  const prevNews = Object.keys(freshNews).reduce((acc, storyId) => {
-    const [feedMark] = storyId.split('-');
-    acc[feedMark] = acc[feedMark] ? { ...acc[feedMark], [storyId]: freshNews[storyId] }
-      : { [storyId]: freshNews[storyId] };
-    return acc;
-  }, {});
-
-  const newAllNews = Object.keys(prevNews).reduce((stories, feedMark) => {
-    const newStories = stories[feedMark] ? { ...stories[feedMark], ...prevNews[feedMark] }
-      : { ...prevNews[feedMark] };
-    return newStories;
-  }, allNews);
-  items.allNews = newAllNews;
-
-  const feedNewsTitles = allNewsTitles.has(feedId) ? allNewsTitles.get(feedId) : new Set();
+export const processNews = (newsData, feedId, items) => {
+  const { allNews } = items;
+  const feedNews = allNews.has(feedId) ? allNews.get(feedId) : new Map();
+  const feedNewsTitles = [...feedNews.values()]
+    .reduce((acc, [storyTitle]) => acc.add(storyTitle), new Set());
   const feedNewsCount = feedNewsTitles.size;
-  const feedFreshNews = newsList.reduce((acc, story) => {
-    const freshNewsCount = Object.keys(acc).length;
+
+  const feedFreshNews = newsData.reduce((acc, story) => {
+    const freshNewsCount = acc.size;
     const [title] = story;
     if (feedNewsTitles.has(title)) {
       return acc;
     }
-    feedNewsTitles.add(title);
     const storyId = `${feedId}-story${feedNewsCount + freshNewsCount + 1}`;
-    return { ...acc, [storyId]: story };
-  }, {});
+    feedNews.set(storyId, story);
+    return acc.set(storyId, story);
+  }, new Map());
 
-  allNewsTitles.set(feedId, feedNewsTitles);
+  allNews.set(feedId, feedNews);
   return feedFreshNews;
 };
 
-export const updateFreshNews = (freshNews, appState) => {
-  const feedFreshNewsCount = Object.keys(freshNews).length;
+export const updateFreshNews = (freshNewsColl, appState) => {
   const { items } = appState.feeds;
-  if (feedFreshNewsCount > 0) {
-    items.freshNews = { ...freshNews };
+  const { refreshingCount } = items;
+  if (freshNewsColl.size > 0) {
+    items.freshNews = freshNewsColl;
+    items.refreshingCount = refreshingCount + 1;
   }
 };
 
-export const refreshFeeds = (feedIds, rssInfo, appState, httpCli, newsCol = {}) => {
+export const refreshFeeds = (feedIds, appState, httpCli, newsCol = new Map()) => {
   const [feedId, ...restFeedIds] = feedIds;
   if (!feedId) {
     updateFreshNews(newsCol, appState);
     return;
   }
-  const { warning } = appState;
-  const { link } = rssInfo[feedId];
+  const { warning, feeds } = appState;
+  const { link } = feeds.rssInfo[feedId];
   httpCli.get(`https://cors-anywhere.herokuapp.com/${link}`)
     .then(({ data }) => parseResponse(data, 'application/xml'))
-    .then(processData)
-    .then(processedData => processNews(processedData.newsList, feedId, appState))
+    .then(processParsedData)
+    .then(({ newsData }) => processNews(newsData, feedId, feeds.items))
     .then((news) => {
-      const updatedNewsCol = { ...newsCol, ...news };
-      refreshFeeds(restFeedIds, rssInfo, appState, httpCli, updatedNewsCol);
+      const updatedNewsCol = new Map([...newsCol, ...news]);
+      refreshFeeds(restFeedIds, appState, httpCli, updatedNewsCol);
     })
     .catch((err) => {
       const { isExist } = warning.refreshing;
@@ -116,6 +84,24 @@ export const refreshFeeds = (feedIds, rssInfo, appState, httpCli, newsCol = {}) 
 export const getFreshNews = (state, httpCli, refreshFn) => {
   const { rssInfo } = state.feeds;
   const feedIds = Object.keys(rssInfo);
-  refreshFn(feedIds, rssInfo, state, httpCli);
-  setTimeout(getFreshNews, 30000, state, httpCli, refreshFn);
+  refreshFn(feedIds, state, httpCli);
+  setTimeout(getFreshNews, 10000, state, httpCli, refreshFn);
+};
+
+export const updateFeedsState = (info, appState, feedId, feedUrl) => {
+  const [title, description] = info;
+  const { feeds } = appState;
+  const { rssInfo, items } = feeds;
+  const newsCount = items.allNews.get(feedId).size;
+  feeds.lastFeedId = feedId;
+  feeds
+    .rssInfo = {
+      ...rssInfo,
+      [feedId]: {
+        title,
+        description,
+        newsCount,
+        link: feedUrl,
+      },
+    };
 };
