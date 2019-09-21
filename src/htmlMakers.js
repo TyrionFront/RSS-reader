@@ -1,15 +1,18 @@
 const setElementsDisplayProperty = (coll, value) => {
+  const currentDisplaying = value === 'none' ? 'd-block' : 'd-none';
   coll.forEach((elem) => {
-    const { style } = elem;
-    style.display = value;
+    const { classList } = elem;
+    classList.replace(currentDisplaying, `d-${value}`);
   });
 };
 
 export const moveRssForm = (formContainer) => {
-  const { classList, style } = formContainer;
-  classList.add('position-absolute', 'mb-2');
-  style.cssText = `bottom: 0;
-  left: 1rem; right: 1rem;`;
+  const mainContainer = document.querySelector('body .container-fluid');
+  mainContainer.classList.remove('h-75');
+  formContainer.parentNode.classList.remove('h-100');
+  const { classList } = formContainer;
+  classList.remove('w-100');
+  classList.add('fixed-bottom', 'mb-0', 'mx-3');
 };
 
 export const makeRssFeedElem = ({ feeds }, feedsList, example, markActive) => {
@@ -17,20 +20,18 @@ export const makeRssFeedElem = ({ feeds }, feedsList, example, markActive) => {
   const lastRssInfo = rssInfo[lastFeedId];
   const { title, description, newsCount } = lastRssInfo;
   const newFeedTag = example.cloneNode(false);
-  const { style } = example;
-  style.display = 'none';
+  newFeedTag.classList.replace('d-none', 'd-block');
 
   newFeedTag.id = lastFeedId;
   newFeedTag.addEventListener('click', markActive);
-  newFeedTag.style.display = 'block';
   newFeedTag.innerHTML = `
-    <div class="float-left" style="max-width: 90%">
-      <h5 class="mb-1">${title}</h5>
-      <p class="mb-1">${description}</p>
+  <div class="d-flex">
+    <h5 class="flex-fill mb-1">${title}</h5>
+    <div>
+      <span id="newsCount${lastFeedId}" class="badge badge-success badge-pill mb-0">${newsCount}</span>
     </div>
-    <span class="badge badge-success badge-pill float-right" id="newsCount${lastFeedId}">
-      ${newsCount}
-    </span>
+  </div>
+  <p class="flex-fill mb-1">${description}</p>
   `;
   feedsList.prepend(newFeedTag);
 };
@@ -40,9 +41,6 @@ export const makeNewsList = ({ feeds }, newsTag, example) => {
   const { freshNews, allNews } = items;
   const [activeId, sameIdMark] = activeFeedId.split(' ');
 
-  if (example.hasAttribute('hidden')) {
-    example.removeAttribute('hidden');
-  }
   const badgeAndFeedIds = [...allNews.keys()].map(feeId => [feeId, `newsCount${feeId}`]);
   badgeAndFeedIds.forEach(([feeId, badgeId]) => {
     const currentFeedAllNewsCount = allNews.get(feeId).size;
@@ -52,12 +50,12 @@ export const makeNewsList = ({ feeds }, newsTag, example) => {
   freshNews.forEach((story, storyId) => {
     const [currentFeedId] = storyId.split('-');
     const [title, link, description] = story;
-    const visualization = !activeId || sameIdMark || activeId === currentFeedId ? 'block' : 'none';
+    const visualization = !activeId || sameIdMark || activeId === currentFeedId ? 'd-block' : 'd-none';
 
     const newStoryTag = example.cloneNode(false);
     newStoryTag.id = storyId;
     newStoryTag.classList.add(currentFeedId);
-    newStoryTag.style.display = visualization;
+    newStoryTag.classList.replace('d-none', visualization);
     newStoryTag.innerHTML = `
       <a href="${link}">${title}</a>
       <button type="button" class="btn btn-outline-info btn-sm ml-md-3" data-toggle="modal" data-target="#modal${storyId}">
@@ -80,11 +78,6 @@ export const makeNewsList = ({ feeds }, newsTag, example) => {
     `;
     newsTag.prepend(newStoryTag);
   });
-  example.hidden = true; // eslint-disable-line no-param-reassign
-  const newsTagDisplaying = newsTag.classList;
-  if (newsTagDisplaying.contains('d-none')) {
-    newsTagDisplaying.replace('d-none', 'd-block');
-  }
 };
 
 export const displayNews = ({ feeds }, newsListTag) => {

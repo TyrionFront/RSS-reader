@@ -51,7 +51,9 @@ export default () => {
 
   const formContainer = document.getElementById('jumbotron');
   const addRssForm = document.getElementById('addRss');
-  const [addLinkBtn, inputField, warningNode] = [...addRssForm.children];
+  const addLinkBtn = document.getElementById('confirm');
+  const inputField = document.getElementById('urlField');
+  const warningNode = document.getElementById('wrongInput');
   const feedsTag = document.getElementById('rssFeeds');
   const newsTag = document.getElementById('news');
   const rssExample = document.getElementById('rssExample');
@@ -75,11 +77,11 @@ export default () => {
 
   watch(appState.warning.input, 'isExist', () => {
     warningNode.innerText = appState.warning.input.warningMessage;
-    warningNode.classList.replace('d-none', 'd-block');
+    warningNode.classList.replace('d-none', 'd-inline');
   });
 
   watch(appState.warning.input, 'warningMessage', () => {
-    warningNode.classList.replace('d-block', 'd-none');
+    warningNode.classList.replace('d-inline', 'd-none');
   });
 
   watch(appState.warning.refreshing, 'isExist', () => {
