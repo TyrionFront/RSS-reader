@@ -49,15 +49,10 @@ export default () => {
     },
   };
 
-  const formContainer = document.getElementById('jumbotron');
   const addRssForm = document.getElementById('addRss');
   const addLinkBtn = document.getElementById('confirm');
   const inputField = document.getElementById('urlField');
   const warningNode = document.getElementById('wrongInput');
-  const feedsTag = document.getElementById('rssFeeds');
-  const newsTag = document.getElementById('news');
-  const rssExample = document.getElementById('rssExample');
-  const storyExample = document.getElementById('storyExample');
 
   const markActive = ({ currentTarget }) => {
     const { activeFeedId } = appState.feeds;
@@ -95,19 +90,19 @@ export default () => {
   });
 
   watch(appState.rssFormState, 'atTheBottom', () => {
-    moveRssForm(formContainer);
+    moveRssForm();
   });
 
   watch(appState.feeds, 'rssInfo', () => {
-    makeRssFeedElem(appState, feedsTag, rssExample, markActive);
+    makeRssFeedElem(appState, markActive);
   });
 
   watch(appState.feeds.items, 'refreshingCount', () => {
-    makeNewsList(appState, newsTag, storyExample);
+    makeNewsList(appState);
   });
 
   watch(appState.feeds, 'activeFeedId', () => {
-    displayNews(appState, newsTag);
+    displayNews(appState);
   });
 
   inputField.addEventListener('input', ({ target }) => {
