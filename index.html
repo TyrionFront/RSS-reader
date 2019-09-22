@@ -60,14 +60,12 @@
     </div>
     <div class="h-100 d-flex align-items-center">
       <div class="jumbotron w-100 mt-5 px-3 py-2 border border-primary" id="jumbotron">
-        <form id="addRss" class="d-flex align-items-start needs-validation position-relative p-0" novalidate>
-          <div class="col-2 pl-0">
-            <button id="confirm" class="w-100 btn btn-outline-primary" type="submit" disabled>
-              confirm adding rss
-            </button>
-          </div>
-          <div class="col-10 pr-0">
-            <input class="w-100 form-control position-relative" id="urlField" type="text" placeholder="Input rss-URL">
+        <form id="addRss" class="d-flex align-items-start needs-validation p-0" novalidate>
+          <button id="confirm" class="btn btn-outline-primary" type="submit" disabled>
+            confirm adding rss
+          </button>
+          <div class="pr-0 pl-2 flex-fill">
+            <input class="form-control" id="urlField" type="text" placeholder="Input rss-URL">
             <div id="wrongInput" class="invalid-feedback d-none">
               Warning message
             </div>
