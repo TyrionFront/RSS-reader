@@ -33,7 +33,7 @@ export const makeRssFeedElem = ({ feeds }, markActive) => {
   newFeedTag.id = lastFeedId;
   newFeedTag.addEventListener('click', markActive);
   newFeedTag.innerHTML = `
-  <div class="d-flex">
+  <div class="d-flex justify-content-center">
     <h5 class="flex-fill mb-1">${title}</h5>
     <div>
       <span id="newsCount${lastFeedId}" class="badge badge-success badge-pill mb-0">${newsCount}</span>
