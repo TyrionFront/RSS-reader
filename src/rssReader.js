@@ -43,6 +43,7 @@ export default () => {
     },
   };
 
+  const mainTitles = document.getElementById('mainTitles');
   const addRssForm = document.getElementById('addRss');
   const addLinkBtn = document.getElementById('confirm');
   const inputField = document.getElementById('urlField');
@@ -82,6 +83,7 @@ export default () => {
     inputField.disabled = false;
     [...loadingIndicator.children].forEach(({ classList }) => classList.add('d-none'));
     addLinkBtn.classList.replace('align-self-end', 'align-self-start');
+    mainTitles.classList.remove('d-none');
   });
 
   watch(appState.rssFormState, 'atTheBottom', () => {
