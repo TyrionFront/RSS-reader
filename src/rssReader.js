@@ -12,8 +12,8 @@ export default () => {
         isValid: false,
       },
       lastValidUrl: '',
-      lastAddedUrl: '',
-      allAddedUrls: {},
+      lastWorkableUrl: '',
+      allVisitedUrls: {},
     },
     warning: {
       input: {
@@ -55,7 +55,7 @@ export default () => {
     addLinkBtn.disabled = !appState.links.typedLink.isValid;
   });
 
-  watch(appState.links, 'allAddedUrls', () => {
+  watch(appState.links, 'allVisitedUrls', () => {
     addLinkBtn.disabled = true;
     inputField.disabled = true;
     [...loadingIndicator.children].forEach(({ classList }) => classList.remove('d-none'));
@@ -78,7 +78,7 @@ export default () => {
     warningNode.classList.replace('d-inline', 'd-none');
   });
 
-  watch(appState.links, 'lastAddedUrl', () => {
+  watch(appState.links, 'lastWorkableUrl', () => {
     inputField.value = '';
     inputField.disabled = false;
     [...loadingIndicator.children].forEach(({ classList }) => classList.add('d-none'));
@@ -98,8 +98,8 @@ export default () => {
     }
     const { value } = target;
     appState.links.typedLink.isEmpty = value.length === 0;
-    const { allAddedUrls } = appState.links;
-    const isLinkValid = validator.isURL(value) && allAddedUrls[value] !== 'visited';
+    const { allVisitedUrls } = appState.links;
+    const isLinkValid = validator.isURL(value) && allVisitedUrls[value] !== 'visited';
     appState.links.typedLink.isValid = isLinkValid;
     if (isLinkValid) {
       appState.links.lastValidUrl = value;
@@ -109,14 +109,14 @@ export default () => {
 
   addRssForm.addEventListener('submit', (e) => {
     e.preventDefault();
-    const { lastValidUrl, allAddedUrls } = appState.links;
+    const { lastValidUrl, allVisitedUrls } = appState.links;
 
-    if (allAddedUrls[lastValidUrl] !== 'visited') {
-      appState.links.allAddedUrls = { ...allAddedUrls, [lastValidUrl]: 'visited' };
+    if (allVisitedUrls[lastValidUrl] !== 'visited') {
+      appState.links.allVisitedUrls = { ...allVisitedUrls, [lastValidUrl]: 'visited' };
       axios.get(`https://cors-anywhere.herokuapp.com/${lastValidUrl}`)
         .then((response) => {
           const parsedData = parseResponse(response, 'application/xml');
-          appState.links.lastAddedUrl = lastValidUrl;
+          appState.links.lastWorkableUrl = lastValidUrl;
           appState.links.typedLink.isEmpty = true;
           appState.links.typedLink.isValid = false;
           return parsedData;
