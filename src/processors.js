@@ -3,7 +3,7 @@ export default (domString, parsingType) => {
   const data = domParser.parseFromString(domString, parsingType);
   const parserError = data.querySelector('parsererror');
   if (parserError) {
-    throw new Error('data format is not .rss or .xml');
+    throw new Error(`Data format is wrong: '${parsingType}'-method can not parse it`);
   }
   const newsTitles = [...data.querySelectorAll('item title')];
   const newsLinks = [...data.querySelectorAll('item link')];
