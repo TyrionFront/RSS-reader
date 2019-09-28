@@ -115,14 +115,14 @@ export default () => {
       appState.links.allVisitedUrls = { ...allVisitedUrls, [lastValidUrl]: 'visited' };
       axios.get(`https://cors-anywhere.herokuapp.com/${lastValidUrl}`)
         .then((response) => {
-          const parsedData = parseResponse(response, 'application/xml');
+          const parsedData = parseResponse(response.data, 'application/xml');
           appState.links.lastWorkableUrl = lastValidUrl;
           appState.links.typedLink.isEmpty = true;
           appState.links.typedLink.isValid = false;
           return parsedData;
         })
         .catch((err) => {
-          if (!err.toString().includes('Refreshing')) {
+          if (!appState.warning.refreshing.isExist) {
             const { isExist } = appState.warning.input;
             appState.warning.input.warningMessage = 'No rss found at this URL';
             appState.links.typedLink.isValid = false;

@@ -1,6 +1,6 @@
-export default (response, dataType) => {
+export default (domString, parsingType) => {
   const domParser = new DOMParser();
-  const data = domParser.parseFromString(response.data, dataType);
+  const data = domParser.parseFromString(domString, parsingType);
   const parserError = data.querySelector('parsererror');
   if (parserError) {
     throw new Error('data format is not \'application/rss+xml\'');
