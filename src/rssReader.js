@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { watch } from 'melanke-watchjs';
 import validator from 'validator';
-import parseResponse from './processors';
+import parseRss from './processors';
 import moveForm from './htmlMakers';
 
 export default () => {
@@ -115,7 +115,7 @@ export default () => {
       appState.links.allVisitedUrls = { ...allVisitedUrls, [lastValidUrl]: 'visited' };
       axios.get(`https://cors-anywhere.herokuapp.com/${lastValidUrl}`)
         .then(({ data }) => {
-          const parsedData = parseResponse(data);
+          const parsedData = parseRss(data);
           appState.links.lastWorkableUrl = lastValidUrl;
           appState.links.typedLink.isEmpty = true;
           appState.links.typedLink.isValid = false;
