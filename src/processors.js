@@ -1,23 +1,23 @@
-export default (domString, parsingType) => {
+export default (response) => {
   const domParser = new DOMParser();
-  const data = domParser.parseFromString(domString, parsingType);
+  const data = domParser.parseFromString(response.data, 'application/xml');
   const parserError = data.querySelector('parsererror');
   if (parserError) {
-    throw new Error(`Data format is wrong: '${parsingType}'-method can not parse it`);
+    throw new Error('Data format is wrong: \'application/xml\'-method can not parse it');
   }
-  const newsTitles = [...data.querySelectorAll('item title')];
-  const newsLinks = [...data.querySelectorAll('item link')];
-  const buffer = document.createElement('div');
-  const newsDescriptions = [...data.querySelectorAll('item description')]
-    .map((elem) => { // in case if there is html-tags in previously parsed text
-      buffer.innerHTML = elem.textContent;
-      return buffer.textContent;
-    });
-  const newsData = newsTitles
-    .map(({ textContent }, i) => [textContent, newsLinks[i].textContent, newsDescriptions[i]])
-    .reverse();
 
-  const title = data.querySelector('channel title').textContent;
-  const description = data.querySelector('channel description').textContent;
-  return { info: [title, description], newsData };
+  const descriptionBuffer = document.createElement('div');
+  const getPureDescription = (description) => {
+    descriptionBuffer.innerHTML = description;
+    return descriptionBuffer.textContent;
+  };
+  const newsData = [...data.querySelectorAll('item')].map((item) => {
+    const storyTitle = item.querySelector('title').textContent;
+    const storyLink = item.querySelector('link').textContent;
+    const storyDescription = item.querySelector('description').textContent;
+    return [storyTitle, storyLink, getPureDescription(storyDescription)];
+  });
+  const feedTitle = data.querySelector('channel title').textContent;
+  const feedDescription = data.querySelector('channel description').textContent;
+  return { feedInfo: [feedTitle, feedDescription], newsData };
 };
