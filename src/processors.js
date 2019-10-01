@@ -1,7 +1,7 @@
-export default (response) => {
+export default (data) => {
   const domParser = new DOMParser();
-  const data = domParser.parseFromString(response.data, 'application/xml');
-  const parserError = data.querySelector('parsererror');
+  const html = domParser.parseFromString(data, 'application/xml');
+  const parserError = html.querySelector('parsererror');
   if (parserError) {
     throw new Error('Data format is wrong: \'application/xml\'-method can not parse it');
   }

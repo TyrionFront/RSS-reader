@@ -114,8 +114,8 @@ export default () => {
     if (allVisitedUrls[lastValidUrl] !== 'visited') {
       appState.links.allVisitedUrls = { ...allVisitedUrls, [lastValidUrl]: 'visited' };
       axios.get(`https://cors-anywhere.herokuapp.com/${lastValidUrl}`)
-        .then((response) => {
-          const parsedData = parseResponse(response);
+        .then(({ data }) => {
+          const parsedData = parseResponse(data);
           appState.links.lastWorkableUrl = lastValidUrl;
           appState.links.typedLink.isEmpty = true;
           appState.links.typedLink.isValid = false;
