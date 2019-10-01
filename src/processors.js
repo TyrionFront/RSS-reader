@@ -1,7 +1,7 @@
 export default (data) => {
   const domParser = new DOMParser();
-  const html = domParser.parseFromString(data, 'application/xml');
-  const parserError = html.querySelector('parsererror');
+  const domTree = domParser.parseFromString(data, 'application/xml');
+  const parserError = domTree.querySelector('parsererror');
   if (parserError) {
     throw new Error('Data format is wrong: \'application/xml\'-method can not parse it');
   }
@@ -11,13 +11,13 @@ export default (data) => {
     descriptionBuffer.innerHTML = description;
     return descriptionBuffer.textContent;
   };
-  const newsData = [...data.querySelectorAll('item')].map((item) => {
+  const newsData = [...domTree.querySelectorAll('item')].map((item) => {
     const storyTitle = item.querySelector('title').textContent;
     const storyLink = item.querySelector('link').textContent;
     const storyDescription = item.querySelector('description').textContent;
     return [storyTitle, storyLink, getPureDescription(storyDescription)];
   });
-  const feedTitle = data.querySelector('channel title').textContent;
-  const feedDescription = data.querySelector('channel description').textContent;
+  const feedTitle = domTree.querySelector('channel title').textContent;
+  const feedDescription = domTree.querySelector('channel description').textContent;
   return { feedInfo: [feedTitle, feedDescription], newsData };
 };
