@@ -13,7 +13,7 @@ export const updateView = () => {
 export const makeFeedItem = (feedId, allFeedsInfo, feedsListTag) => {
   const { feedTitle, feedDescription, newsCount } = allFeedsInfo[feedId];
   const newFeedItem = document.createElement('div');
-  feedsListTag.append(newFeedItem);
+  feedsListTag.prepend(newFeedItem);
   newFeedItem.outerHTML = `<li class="list-group-item list-group-item-action rounded border mb-1 d-block" id="${feedId}">
     <div class="d-flex justify-content-center">
       <h5 class="flex-fill mb-1">${feedTitle}</h5>
