@@ -1,8 +1,8 @@
 import axios from 'axios';
 import { watch } from 'melanke-watchjs';
 import validator from 'validator';
-import parseRss from './processors';
-import moveForm from './htmlMakers';
+import { parseRss, updateRssState, updateNewsState } from './processors';
+import { updateView, makeNewsList, makeFeedItem } from './htmlMakers';
 
 export default () => {
   const appState = {
@@ -28,12 +28,13 @@ export default () => {
     feeds: {
       lastFeedId: '',
       workableUrls: new Set(),
-      rssInfo: {},
+      allFeedsInfo: {},
       activeFeedId: '',
       prevActiveFeedId: '',
       items: {
-        freshNews: new Map(),
+        freshNews: [],
         allNews: new Map(),
+        allNewsTitles: new Set(),
         refreshingCount: 0,
       },
       refreshingIsNotStarted: true,
@@ -49,6 +50,8 @@ export default () => {
   const inputField = document.getElementById('urlField');
   const warningNode = document.getElementById('wrongInput');
   const loadingIndicator = document.getElementById('linkLoading');
+  const feedsListTag = document.getElementById('rssFeeds');
+  const newsTag = document.getElementById('news');
 
   watch(appState.links, 'typedLink', () => {
     inputField.classList.toggle('is-invalid');
@@ -87,7 +90,18 @@ export default () => {
   });
 
   watch(appState.rssFormState, 'atTheBottom', () => {
-    moveForm();
+    updateView();
+  });
+
+  watch(appState.feeds, 'allFeedsInfo', () => {
+    const { lastFeedId, allFeedsInfo } = appState.feeds;
+    makeFeedItem(lastFeedId, allFeedsInfo, feedsListTag);
+  });
+
+  watch(appState.feeds.items, 'freshNews', () => {
+    const { freshNews } = appState.feeds.items;
+    const [stories] = freshNews;
+    makeNewsList(stories, newsTag);
   });
 
 
@@ -110,16 +124,24 @@ export default () => {
   addRssForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const { lastValidUrl, allVisitedUrls } = appState.links;
-
     if (allVisitedUrls[lastValidUrl] !== 'visited') {
       appState.links.allVisitedUrls = { ...allVisitedUrls, [lastValidUrl]: 'visited' };
       axios.get(`https://cors-anywhere.herokuapp.com/${lastValidUrl}`)
         .then(({ data }) => {
           const parsedData = parseRss(data);
+          appState.feeds.workableUrls.add(lastValidUrl);
           appState.links.lastWorkableUrl = lastValidUrl;
           appState.links.typedLink.isEmpty = true;
           appState.links.typedLink.isValid = false;
           return parsedData;
+        })
+        .then(({ feedInfo, newsData }) => {
+          if (!appState.rssFormState.atTheBottom) {
+            appState.rssFormState.atTheBottom = true;
+          }
+          const feedId = `rssFeed${appState.feeds.workableUrls.size}`;
+          updateNewsState(newsData, feedId, appState);
+          updateRssState(feedInfo, appState);
         })
         .catch((err) => {
           if (!appState.warning.refreshing.isExist) {
