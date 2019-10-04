@@ -31,9 +31,9 @@ export const updateNewsState = (newsData, currentFeedId, appState) => {
     return acc.set(storyId, storyData);
   }, new Map());
 
-  const prevFeedAllNews = allNews.has(currentFeedId)
+  const currentFeedAllNews = allNews.has(currentFeedId)
     ? allNews.get(currentFeedId) : new Map();
-  allNews.set(currentFeedId, new Map([...prevFeedAllNews, ...newStories]));
+  allNews.set(currentFeedId, new Map([...currentFeedAllNews, ...newStories]));
   items.freshNews = [newStories, currentFeedId];
 };
 

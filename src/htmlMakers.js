@@ -26,9 +26,9 @@ export const makeFeedItem = (feedId, allFeedsInfo, feedsListTag) => {
 };
 
 export const makeNewsList = (newsData, newsTag) => {
+  const descriptionBuffer = document.createElement('div');
   newsData.forEach((story, storyId) => {
     const [storyTitle, storyLink, storyDescription] = story;
-    const descriptionBuffer = document.createElement('div');
     const getPureDescription = () => {
       descriptionBuffer.innerHTML = storyDescription;
       return descriptionBuffer.textContent;
