@@ -11,8 +11,8 @@ export default () => {
         isEmpty: true,
         isValid: false,
       },
-      lastValidUrl: '',
       lastWorkableUrl: '',
+      workableUrls: new Set(),
       allVisitedUrls: {},
     },
     warning: {
@@ -27,7 +27,6 @@ export default () => {
     },
     feeds: {
       lastFeedId: '',
-      workableUrls: new Set(),
       allFeedsInfo: {},
       activeFeedId: '',
       prevActiveFeedId: '',
@@ -46,8 +45,7 @@ export default () => {
 
   const mainTitles = document.getElementById('mainTitles');
   const addRssForm = document.getElementById('addRss');
-  const addLinkBtn = document.getElementById('confirm');
-  const inputField = document.getElementById('urlField');
+  const [addLinkBtn, inputField] = addRssForm.elements;
   const warningNode = document.getElementById('wrongInput');
   const loadingIndicator = document.getElementById('linkLoading');
   const feedsListTag = document.getElementById('rssFeeds');
@@ -115,22 +113,20 @@ export default () => {
     const { allVisitedUrls } = appState.links;
     const isLinkValid = validator.isURL(value) && allVisitedUrls[value] !== 'visited';
     appState.links.typedLink.isValid = isLinkValid;
-    if (isLinkValid) {
-      appState.links.lastValidUrl = value;
-    }
   });
 
 
   addRssForm.addEventListener('submit', (e) => {
     e.preventDefault();
-    const { lastValidUrl, allVisitedUrls } = appState.links;
-    if (allVisitedUrls[lastValidUrl] !== 'visited') {
-      appState.links.allVisitedUrls = { ...allVisitedUrls, [lastValidUrl]: 'visited' };
-      axios.get(`https://cors-anywhere.herokuapp.com/${lastValidUrl}`)
+    const link = inputField.value;
+    const { allVisitedUrls } = appState.links;
+    if (allVisitedUrls[link] !== 'visited') {
+      appState.links.allVisitedUrls = { ...allVisitedUrls, [link]: 'visited' };
+      axios.get(`https://cors-anywhere.herokuapp.com/${link}`)
         .then(({ data }) => {
           const parsedData = parseRss(data);
-          appState.feeds.workableUrls.add(lastValidUrl);
-          appState.links.lastWorkableUrl = lastValidUrl;
+          appState.links.workableUrls.add(link);
+          appState.links.lastWorkableUrl = link;
           appState.links.typedLink.isEmpty = true;
           appState.links.typedLink.isValid = false;
           return parsedData;
@@ -139,7 +135,7 @@ export default () => {
           if (!appState.rssFormState.atTheBottom) {
             appState.rssFormState.atTheBottom = true;
           }
-          const feedId = `rssFeed${appState.feeds.workableUrls.size}`;
+          const feedId = `rssFeed${appState.links.workableUrls.size}`;
           updateNewsState(newsData, feedId, appState);
           updateRssState(feedInfo, appState);
         })
