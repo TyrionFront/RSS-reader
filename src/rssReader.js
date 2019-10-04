@@ -11,7 +11,6 @@ export default () => {
         isEmpty: true,
         isValid: false,
       },
-      lastWorkableUrl: '',
       workableUrls: new Set(),
       allVisitedUrls: {},
     },
@@ -79,7 +78,7 @@ export default () => {
     warningNode.classList.replace('d-inline', 'd-none');
   });
 
-  watch(appState.links, 'lastWorkableUrl', () => {
+  watch(appState.feeds, 'lastFeedId', () => {
     inputField.value = '';
     inputField.disabled = false;
     [...loadingIndicator.children].forEach(({ classList }) => classList.add('d-none'));
@@ -126,7 +125,6 @@ export default () => {
         .then(({ data }) => {
           const parsedData = parseRss(data);
           appState.links.workableUrls.add(link);
-          appState.links.lastWorkableUrl = link;
           appState.links.typedLink.isEmpty = true;
           appState.links.typedLink.isValid = false;
           return parsedData;
