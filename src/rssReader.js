@@ -114,7 +114,7 @@ export default () => {
     form.state = 'processing';
     axios.get(`https://cors-anywhere.herokuapp.com/${form.url}`)
       .then(({ data }) => {
-        const parsedData = parseRss(data, appState.feeds);
+        const parsedData = parseRss(data, feeds);
         request.state = 'successful';
         return parsedData;
       })

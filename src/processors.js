@@ -41,8 +41,8 @@ export const updatePosts = (postsData, currentFeedId, appState) => {
 
 export const updateFeeds = (feedInfo, feedId, url, appState) => {
   const [feedTitle, feedDescription] = feedInfo;
-  const { feeds } = appState;
-  const currentFeedAllPostsSize = appState.posts.all[feedId].length;
+  const { feeds, posts } = appState;
+  const currentFeedAllPostsSize = posts.all[feedId].length;
   const updatedFeeds = [
     ...feeds,
     {
