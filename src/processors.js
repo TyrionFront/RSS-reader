@@ -1,11 +1,10 @@
-export const parseRss = (data, appState) => {
+export const parseRss = (data, feeds) => {
   const domParser = new DOMParser();
   const domTree = domParser.parseFromString(data, 'application/xml');
   const parserError = domTree.querySelector('parsererror');
   if (parserError) {
     throw new Error('Wrong data format: \'application/xml\'-method can not parse it');
   }
-  const { feeds } = appState;
   const title = domTree.querySelector('channel title').textContent;
   const sameFeed = feeds.find(({ feedTitle }) => feedTitle === title);
   if (sameFeed) {
