@@ -1,48 +1,36 @@
 import axios from 'axios';
 import { watch } from 'melanke-watchjs';
 import validator from 'validator';
-import { parseRss, updateRssState, updateNewsState } from './processors';
-import { updateView, makeNewsList, makeFeedItem } from './htmlMakers';
+import i18next from 'i18next';
+import resources from '../locales/errors_description';
+import { parseRss, updateFeeds, updatePosts } from './processors';
+import { makePostsList, makeFeedItem } from './htmlMakers';
+
+const i18nextInit = i18next.init({
+  debug: true,
+  lng: 'errors',
+  resources,
+});
 
 export default () => {
   const appState = {
-    links: {
-      typedLink: {
-        isEmpty: true,
-        isValid: false,
-      },
-      workableUrls: new Set(),
-      allVisitedUrls: {},
+    form: {
+      state: 'empty',
+      url: '',
     },
-    warning: {
-      input: {
-        isExist: false,
-        warningMessage: '',
-      },
-      refreshing: {
-        isExist: false,
-        warningMessage: '',
-      },
+    request: {
+      state: '',
+      responseStatus: '',
     },
-    feeds: {
-      lastFeedId: '',
-      allFeedsInfo: {},
-      activeFeedId: '',
-      prevActiveFeedId: '',
-      items: {
-        freshNews: [],
-        allNews: new Map(),
-        allNewsTitles: new Set(),
-        refreshingCount: 0,
-      },
-      refreshingIsNotStarted: true,
-    },
-    rssFormState: {
-      atTheBottom: false,
+    feeds: [],
+    posts: {
+      fresh: [],
+      all: {},
     },
   };
 
   const mainTitles = document.getElementById('mainTitles');
+  const content = document.getElementById('content');
   const addRssForm = document.getElementById('addRss');
   const [addLinkBtn, inputField] = addRssForm.elements;
   const warningNode = document.getElementById('wrongInput');
@@ -50,102 +38,102 @@ export default () => {
   const feedsListTag = document.getElementById('rssFeeds');
   const newsTag = document.getElementById('news');
 
-  watch(appState.links, 'typedLink', () => {
-    inputField.classList.toggle('is-invalid');
-    addLinkBtn.disabled = !appState.links.typedLink.isValid;
+  watch(appState.form, 'state', () => {
+    const { state } = appState.form;
+    warningNode.classList.add('d-none');
+    switch (state) {
+      case 'is-valid':
+        inputField.classList.remove('is-invalid');
+        inputField.classList.add(state);
+        addLinkBtn.disabled = false;
+        break;
+      case 'is-invalid':
+        inputField.classList.remove('is-valid');
+        inputField.classList.add(state);
+        addLinkBtn.disabled = true;
+        break;
+      default:
+        inputField.className = 'form-control';
+        addLinkBtn.disabled = true;
+        break;
+    }
   });
 
-  watch(appState.links, 'allVisitedUrls', () => {
-    addLinkBtn.disabled = true;
-    inputField.disabled = true;
-    [...loadingIndicator.children].forEach(({ classList }) => classList.remove('d-none'));
-    addLinkBtn.classList.replace('align-self-start', 'align-self-end');
-  });
-
-  watch(appState.links.typedLink, 'isValid', () => {
-    inputField.classList.toggle('is-valid');
-  });
-
-  watch(appState.warning.input, 'isExist', () => {
-    [...loadingIndicator.children].forEach(({ classList }) => classList.add('d-none'));
-    addLinkBtn.classList.replace('align-self-end', 'align-self-start');
-    warningNode.innerText = appState.warning.input.warningMessage;
-    warningNode.classList.replace('d-none', 'd-inline');
+  watch(appState.request, 'state', () => {
+    const { request } = appState;
+    if (request.state === 'processing') {
+      [...loadingIndicator.children].forEach(({ classList }) => classList.remove('d-none'));
+      inputField.disabled = true;
+      addLinkBtn.classList.replace('align-self-start', 'align-self-end');
+      return;
+    }
+    if (request.state === 'successful') {
+      inputField.value = '';
+      mainTitles.classList.remove('d-none');
+      content.classList.remove('d-none');
+    }
+    if (request.state === 'failed') {
+      const errKey = request.responseStatus;
+      i18nextInit.then(() => {
+        warningNode.innerText = i18next.t([`${errKey}`, 'unspecific']);
+        warningNode.classList.remove('d-none');
+      });
+    }
     inputField.disabled = false;
-  });
-
-  watch(appState.warning.input, 'warningMessage', () => {
-    warningNode.classList.replace('d-inline', 'd-none');
-  });
-
-  watch(appState.feeds, 'lastFeedId', () => {
-    inputField.value = '';
-    inputField.disabled = false;
-    [...loadingIndicator.children].forEach(({ classList }) => classList.add('d-none'));
     addLinkBtn.classList.replace('align-self-end', 'align-self-start');
-    mainTitles.classList.remove('d-none');
+    [...loadingIndicator.children].forEach(({ classList }) => classList.add('d-none'));
   });
 
-  watch(appState.rssFormState, 'atTheBottom', () => {
-    updateView();
+  watch(appState, 'feeds', () => {
+    makeFeedItem(appState.feeds, feedsListTag);
   });
 
-  watch(appState.feeds, 'allFeedsInfo', () => {
-    const { lastFeedId, allFeedsInfo } = appState.feeds;
-    makeFeedItem(lastFeedId, allFeedsInfo, feedsListTag);
-  });
-
-  watch(appState.feeds.items, 'freshNews', () => {
-    const { freshNews } = appState.feeds.items;
-    const [stories] = freshNews;
-    makeNewsList(stories, newsTag);
+  watch(appState.posts, 'fresh', () => {
+    const { fresh } = appState.posts;
+    makePostsList(fresh, newsTag);
   });
 
 
   inputField.addEventListener('input', ({ target }) => {
-    const { warningMessage } = appState.warning.input;
-    if (warningMessage) {
-      appState.warning.input.warningMessage = '';
-    }
+    const { form } = appState;
     const { value } = target;
-    appState.links.typedLink.isEmpty = value.length === 0;
-    const { allVisitedUrls } = appState.links;
-    const isLinkValid = validator.isURL(value) && allVisitedUrls[value] !== 'visited';
-    appState.links.typedLink.isValid = isLinkValid;
+    if (value.length === 0) {
+      appState.form.state = 'empty';
+      return;
+    }
+    const sameFeed = appState.feeds.find(({ url }) => url === value);
+    const isLinkValid = validator.isURL(value) && !sameFeed;
+    form.state = isLinkValid ? 'is-valid' : 'is-invalid';
+    form.url = isLinkValid ? value : '';
   });
-
 
   addRssForm.addEventListener('submit', (e) => {
     e.preventDefault();
-    const link = inputField.value;
-    const { allVisitedUrls } = appState.links;
-    if (allVisitedUrls[link] !== 'visited') {
-      appState.links.allVisitedUrls = { ...allVisitedUrls, [link]: 'visited' };
-      axios.get(`https://cors-anywhere.herokuapp.com/${link}`)
-        .then(({ data }) => {
-          const parsedData = parseRss(data);
-          appState.links.workableUrls.add(link);
-          appState.links.typedLink.isEmpty = true;
-          appState.links.typedLink.isValid = false;
-          return parsedData;
-        })
-        .then(({ feedInfo, newsData }) => {
-          if (!appState.rssFormState.atTheBottom) {
-            appState.rssFormState.atTheBottom = true;
-          }
-          const feedId = `rssFeed${appState.links.workableUrls.size}`;
-          updateNewsState(newsData, feedId, appState);
-          updateRssState(feedInfo, appState);
-        })
-        .catch((err) => {
-          if (!appState.warning.refreshing.isExist) {
-            const { isExist } = appState.warning.input;
-            appState.warning.input.warningMessage = 'No rss found at this URL';
-            appState.links.typedLink.isValid = false;
-            appState.warning.input.isExist = !isExist;
-          }
+    const { request, form, feeds } = appState;
+    request.state = 'processing';
+    form.state = 'processing';
+    axios.get(`https://cors-anywhere.herokuapp.com/${form.url}`)
+      .then(({ data }) => {
+        const parsedData = parseRss(data, appState);
+        request.state = 'successful';
+        return parsedData;
+      })
+      .then(({ feedInfo, postData }) => {
+        const feedsListSize = feeds.length;
+        const feedId = `rssFeed${feedsListSize + 1}`;
+        updatePosts(postData, feedId, appState);
+        updateFeeds(feedInfo, feedId, form.url, appState);
+      })
+      .catch((err) => {
+        form.state = 'is-invalid';
+        request.state = 'failed';
+        if (err.response) {
+          request.responseStatus = err.response.status;
           throw new Error(err);
-        });
-    }
+        }
+        const [statusType] = err.message.split(' ');
+        request.responseStatus = statusType;
+        throw new Error(err);
+      });
   });
 };

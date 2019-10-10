@@ -1,51 +1,54 @@
-export const parseRss = (data) => {
+export const parseRss = (data, appState) => {
   const domParser = new DOMParser();
   const domTree = domParser.parseFromString(data, 'application/xml');
   const parserError = domTree.querySelector('parsererror');
   if (parserError) {
-    throw new Error('Data format is wrong: \'application/xml\'-method can not parse it');
+    throw new Error('Wrong data format: \'application/xml\'-method can not parse it');
   }
+  const { feeds } = appState;
+  const title = domTree.querySelector('channel title').textContent;
+  const sameFeed = feeds.find(({ feedTitle }) => feedTitle === title);
+  if (sameFeed) {
+    throw new Error(`SameFeed already exists:\n  ${sameFeed}`);
+  }
+  const description = domTree.querySelector('channel description').textContent;
 
-  const newsData = [...domTree.querySelectorAll('item')].map((item) => {
-    const storyTitle = item.querySelector('title').textContent;
-    const storyLink = item.querySelector('link').textContent;
-    const storyDescription = item.querySelector('description').textContent;
-    return [storyTitle, storyLink, storyDescription];
+  const postData = [...domTree.querySelectorAll('item')].map((item) => {
+    const postTitle = item.querySelector('title').textContent;
+    const postLink = item.querySelector('link').textContent;
+    const postDescription = item.querySelector('description').textContent;
+    return [postTitle, postLink, postDescription];
   }).reverse();
-
-  const feedTitle = domTree.querySelector('channel title').textContent;
-  const feedDescription = domTree.querySelector('channel description').textContent;
-  return { feedInfo: [feedTitle, feedDescription], newsData };
+  return { feedInfo: [title, description], postData };
 };
 
-export const updateNewsState = (newsData, currentFeedId, appState) => {
-  const { items } = appState.feeds;
-  const { allNewsTitles, allNews } = items;
-  const newStories = newsData.reduce((acc, storyData) => {
-    const [storyTitle] = storyData;
-    if (allNewsTitles.has(storyTitle)) {
+export const updatePosts = (postsData, currentFeedId, appState) => {
+  const { posts } = appState;
+  const { all } = posts;
+  const currentFeedAllPosts = all[currentFeedId] ? all[currentFeedId] : [];
+  const newPosts = postsData.reduce((acc, post) => {
+    const [title] = post;
+    const samePost = currentFeedAllPosts.find(([postTitle]) => postTitle === title);
+    if (samePost) {
       return acc;
     }
-    allNewsTitles.add(storyTitle);
-    const storyId = `${currentFeedId}-story${acc.size + 1}`;
-    return acc.set(storyId, storyData);
-  }, new Map());
-
-  const currentFeedAllNews = allNews.has(currentFeedId)
-    ? allNews.get(currentFeedId) : new Map();
-  allNews.set(currentFeedId, new Map([...currentFeedAllNews, ...newStories]));
-  items.freshNews = [newStories, currentFeedId];
+    currentFeedAllPosts.push(post);
+    const postId = `${currentFeedId}-post${acc.length + 1}`;
+    return [...acc, [...post, postId]];
+  }, []);
+  all[currentFeedId] = currentFeedAllPosts;
+  posts.fresh = newPosts;
 };
 
-export const updateRssState = (feedInfo, appState) => {
+export const updateFeeds = (feedInfo, feedId, url, appState) => {
   const [feedTitle, feedDescription] = feedInfo;
   const { feeds } = appState;
-  const { allFeedsInfo, items } = feeds;
-  const [feedStories, feedId] = items.freshNews;
-  const updatedFeedsInfo = {
-    ...allFeedsInfo,
-    [feedId]: { feedTitle, feedDescription, newsCount: feedStories.size },
-  };
-  feeds.lastFeedId = feedId;
-  feeds.allFeedsInfo = updatedFeedsInfo;
+  const currentFeedAllPostsSize = appState.posts.all[feedId].length;
+  const updatedFeeds = [
+    ...feeds,
+    {
+      feedId, feedTitle, feedDescription, currentFeedAllPostsSize, url,
+    },
+  ];
+  appState.feeds = updatedFeeds;// eslint-disable-line no-param-reassign
 };
