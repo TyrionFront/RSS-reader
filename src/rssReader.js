@@ -2,13 +2,14 @@ import axios from 'axios';
 import { watch } from 'melanke-watchjs';
 import validator from 'validator';
 import i18next from 'i18next';
-import resources from '../locales/errors_description';
+import resources from '../locales/descriptions';
 import { parseRss, updateFeeds, updatePosts } from './processors';
 import { makePostsList, makeFeedItem } from './htmlMakers';
 
 const i18nextInit = i18next.init({
   debug: true,
-  lng: 'errors',
+  lng: 'descriptions',
+  defaultNS: 'errors',
   resources,
 });
 
