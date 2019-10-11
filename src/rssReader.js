@@ -6,14 +6,14 @@ import resources from '../locales/descriptions';
 import { parseRss, updateFeeds, updatePosts } from './processors';
 import { makePostsList, makeFeedItem } from './htmlMakers';
 
-const i18nextInit = i18next.init({
-  debug: true,
-  lng: 'descriptions',
-  defaultNS: 'errors',
-  resources,
-});
-
 export default () => {
+  i18next.init({
+    debug: true,
+    lng: 'descriptions',
+    defaultNS: 'errors',
+    resources,
+  });
+
   const appState = {
     form: {
       state: 'empty',
@@ -75,10 +75,8 @@ export default () => {
     }
     if (request.state === 'failed') {
       const errKey = request.responseStatus;
-      i18nextInit.then(() => {
-        warningNode.innerText = i18next.t([`${errKey}`, 'unspecific']);
-        warningNode.classList.remove('d-none');
-      });
+      warningNode.innerText = i18next.t([`${errKey}`, 'unspecific']);
+      warningNode.classList.remove('d-none');
     }
     inputField.disabled = false;
     addLinkBtn.classList.replace('align-self-end', 'align-self-start');
