@@ -11,6 +11,7 @@ export default () => {
     debug: true,
     lng: 'descriptions',
     defaultNS: 'errors',
+    initImmediate: false,
     resources,
   });
 
