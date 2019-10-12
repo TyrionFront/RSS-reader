@@ -11,17 +11,14 @@ export default () => {
     debug: true,
     lng: 'descriptions',
     defaultNS: 'errors',
-    initImmediate: false,
     resources,
   });
 
   const appState = {
     form: {
-      state: 'empty',
+      state: 'onInput',
+      urlState: 'empty',
       url: '',
-    },
-    request: {
-      state: '',
       responseStatus: '',
     },
     feeds: [],
@@ -40,48 +37,40 @@ export default () => {
   const feedsListTag = document.getElementById('rssFeeds');
   const newsTag = document.getElementById('news');
 
-  watch(appState.form, 'state', () => {
-    const { state } = appState.form;
-    warningNode.classList.add('d-none');
-    switch (state) {
-      case 'is-valid':
-        inputField.classList.remove('is-invalid');
-        inputField.classList.add(state);
-        addLinkBtn.disabled = false;
-        break;
-      case 'is-invalid':
-        inputField.classList.remove('is-valid');
-        inputField.classList.add(state);
-        addLinkBtn.disabled = true;
-        break;
-      default:
-        inputField.className = 'form-control';
-        addLinkBtn.disabled = true;
-        break;
+  watch(appState.form, 'urlState', () => {
+    const { urlState } = appState.form;
+    inputField.className = 'form-control';
+    if (urlState === 'is-valid') {
+      inputField.classList.add(urlState);
+      addLinkBtn.disabled = false;
+    }
+    if (urlState === 'is-invalid') {
+      inputField.classList.add(urlState);
     }
   });
 
-  watch(appState.request, 'state', () => {
-    const { request } = appState;
-    if (request.state === 'processing') {
+  watch(appState.form, 'state', () => {
+    const { state, responseStatus } = appState.form;
+    inputField.disabled = false;
+    warningNode.classList.add('d-none');
+    addLinkBtn.disabled = true;
+    addLinkBtn.classList.replace('align-self-end', 'align-self-start');
+    [...loadingIndicator.children].forEach(({ classList }) => classList.add('d-none'));
+    if (state === 'processing') {
       [...loadingIndicator.children].forEach(({ classList }) => classList.remove('d-none'));
       inputField.disabled = true;
+      inputField.className = 'form-control';
       addLinkBtn.classList.replace('align-self-start', 'align-self-end');
-      return;
     }
-    if (request.state === 'successful') {
+    if (state === 'processed') {
       inputField.value = '';
       mainTitles.classList.remove('d-none');
       content.classList.remove('d-none');
     }
-    if (request.state === 'failed') {
-      const errKey = request.responseStatus;
-      warningNode.innerText = i18next.t([`${errKey}`, 'unspecific']);
+    if (state === 'failed') {
+      warningNode.innerText = i18next.t([`${responseStatus}`, 'unspecific']);
       warningNode.classList.remove('d-none');
     }
-    inputField.disabled = false;
-    addLinkBtn.classList.replace('align-self-end', 'align-self-start');
-    [...loadingIndicator.children].forEach(({ classList }) => classList.add('d-none'));
   });
 
   watch(appState, 'feeds', () => {
@@ -97,25 +86,26 @@ export default () => {
   inputField.addEventListener('input', ({ target }) => {
     const { form } = appState;
     const { value } = target;
+    form.state = 'onInput';
     if (value.length === 0) {
-      appState.form.state = 'empty';
+      form.urlState = 'empty';
       return;
     }
     const sameFeed = appState.feeds.find(({ url }) => url === value);
     const isLinkValid = validator.isURL(value) && !sameFeed;
-    form.state = isLinkValid ? 'is-valid' : 'is-invalid';
+    form.urlState = isLinkValid ? 'is-valid' : 'is-invalid';
     form.url = isLinkValid ? value : '';
   });
 
   addRssForm.addEventListener('submit', (e) => {
     e.preventDefault();
-    const { request, form, feeds } = appState;
-    request.state = 'processing';
+    const { form, feeds } = appState;
     form.state = 'processing';
     axios.get(`https://cors-anywhere.herokuapp.com/${form.url}`)
       .then(({ data }) => {
         const parsedData = parseRss(data, feeds);
-        request.state = 'successful';
+        form.state = 'processed';
+        form.urlState = 'empty';
         return parsedData;
       })
       .then(({ feedInfo, postData }) => {
@@ -125,14 +115,14 @@ export default () => {
         updateFeeds(feedInfo, feedId, form.url, appState);
       })
       .catch((err) => {
-        form.state = 'is-invalid';
-        request.state = 'failed';
+        form.urlState = 'is-invalid';
+        form.state = 'failed';
         if (err.response) {
-          request.responseStatus = err.response.status;
+          form.responseStatus = err.response.status;
           throw new Error(err);
         }
         const [statusType] = err.message.split(' ');
-        request.responseStatus = statusType;
+        form.responseStatus = statusType;
         throw new Error(err);
       });
   });
