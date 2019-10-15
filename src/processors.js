@@ -1,3 +1,11 @@
+import validator from 'validator';
+import * as R from 'ramda';
+
+export const validateUrl = (feeds, url) => {
+  const sameFeed = feeds.find(feed => feed.url === url);
+  return validator.isURL(url) && !sameFeed;
+};
+
 export const parseRss = (data, feeds) => {
   const domParser = new DOMParser();
   const domTree = domParser.parseFromString(data, 'application/xml');
@@ -6,48 +14,31 @@ export const parseRss = (data, feeds) => {
     throw new Error('Wrong data format: \'application/xml\'-method can not parse it');
   }
   const title = domTree.querySelector('channel title').textContent;
-  const sameFeed = feeds.find(({ feedTitle }) => feedTitle === title);
+  const sameFeed = feeds.find(feed => feed.title === title);
   if (sameFeed) {
-    throw new Error(`SameFeed already exists:\n  ${sameFeed}`);
+    throw new Error(`SameFeed already exists:\n  id- ${sameFeed.feedId}\n  Title- ${sameFeed.title}`);
   }
   const description = domTree.querySelector('channel description').textContent;
 
-  const postData = [...domTree.querySelectorAll('item')].map((item) => {
+  const postsList = [...domTree.querySelectorAll('item')].map((item) => {
     const postTitle = item.querySelector('title').textContent;
-    const postLink = item.querySelector('link').textContent;
+    const postUrl = item.querySelector('link').textContent;
     const postDescription = item.querySelector('description').textContent;
-    return [postTitle, postLink, postDescription];
+    return { postTitle, postUrl, postDescription };
   }).reverse();
-  return { feedInfo: [title, description], postData };
+  return { title, description, postsList };
 };
 
-export const updatePosts = (postsData, currentFeedId, appState) => {
+export const updatePosts = (postsList, currentFeedId, appState) => {
   const { posts } = appState;
   const { all } = posts;
   const currentFeedAllPosts = all[currentFeedId] ? all[currentFeedId] : [];
-  const newPosts = postsData.reduce((acc, post) => {
-    const [title] = post;
-    const samePost = currentFeedAllPosts.find(([postTitle]) => postTitle === title);
-    if (samePost) {
-      return acc;
-    }
+  const newPosts = R.difference(postsList, currentFeedAllPosts);
+  const newPostsWithId = newPosts.map((post, i) => {
     currentFeedAllPosts.push(post);
-    const postId = `${currentFeedId}-post${acc.length + 1}`;
-    return [...acc, [...post, postId]];
-  }, []);
+    const postId = `${currentFeedId}-post${i + 1}`;
+    return { ...post, postId };
+  });
   all[currentFeedId] = currentFeedAllPosts;
-  posts.fresh = newPosts;
-};
-
-export const updateFeeds = (feedInfo, feedId, url, appState) => {
-  const [feedTitle, feedDescription] = feedInfo;
-  const { feeds, posts } = appState;
-  const currentFeedAllPostsSize = posts.all[feedId].length;
-  const updatedFeeds = [
-    ...feeds,
-    {
-      feedId, feedTitle, feedDescription, currentFeedAllPostsSize, url,
-    },
-  ];
-  appState.feeds = updatedFeeds;// eslint-disable-line no-param-reassign
+  posts.fresh = newPostsWithId;
 };

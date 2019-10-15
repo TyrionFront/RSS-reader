@@ -1,25 +1,27 @@
 export const makeFeedItem = (feeds, feedsListTag) => {
   const { length } = feeds;
   const {
-    feedId, feedTitle, feedDescription, currentFeedAllPostsSize,
+    feedId, title, description, currentFeedAllPostsSize,
   } = feeds[length - 1];
   const newFeedItem = document.createElement('div');
   feedsListTag.prepend(newFeedItem);
   newFeedItem.outerHTML = `<li class="list-group-item list-group-item-action rounded border mb-1 d-block" id="${feedId}">
     <div class="d-flex justify-content-center">
-      <h5 class="flex-fill mb-1">${feedTitle}</h5>
+      <h5 class="flex-fill mb-1">${title}</h5>
       <div>
         <span id="${feedId}-badge" class="badge badge-success badge-pill mb-0">${currentFeedAllPostsSize}</span>
       </div>
     </div>
-    <p class="flex-fill mb-1">${feedDescription}</p>
+    <p class="flex-fill mb-1">${description}</p>
   </li>`;
 };
 
 export const makePostsList = (posts, postsTag) => {
   const descriptionBuffer = document.createElement('div');
   posts.forEach((post) => {
-    const [postTitle, postUrl, postDescription, postId] = post;
+    const {
+      postTitle, postUrl, postDescription, postId,
+    } = post;
     const getPureDescription = () => {
       descriptionBuffer.innerHTML = postDescription;
       return descriptionBuffer.textContent;
