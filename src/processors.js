@@ -1,5 +1,5 @@
 import validator from 'validator';
-import * as R from 'ramda';
+import _ from 'lodash'; // eslint-disable-line lodash-fp/use-fp
 
 export const validateUrl = (feeds, url) => {
   const sameFeed = feeds.find(feed => feed.url === url);
@@ -33,7 +33,7 @@ export const updatePosts = (postsList, currentFeedId, appState) => {
   const { posts } = appState;
   const { all } = posts;
   const currentFeedAllPosts = all[currentFeedId] ? all[currentFeedId] : [];
-  const newPosts = R.difference(postsList, currentFeedAllPosts);
+  const newPosts = _.differenceBy(postsList, currentFeedAllPosts, 'postTitle');
   const newPostsWithId = newPosts.map((post, i) => {
     currentFeedAllPosts.push(post);
     const postId = `${currentFeedId}-post${i + 1}`;
