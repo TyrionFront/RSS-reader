@@ -1,6 +1,3 @@
-/* eslint-disable lodash-fp/use-fp */
-import _ from 'lodash';
-
 const getPureDescription = (bufferTag, content) => {
   bufferTag.innerHTML = content; // eslint-disable-line no-param-reassign
   const tags = [...bufferTag.children].filter(tag => tag.tagName === 'DIV' || tag.id);
