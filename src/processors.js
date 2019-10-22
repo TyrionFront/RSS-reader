@@ -1,4 +1,5 @@
 import validator from 'validator';
+import axios from 'axios';
 import _ from 'lodash'; // eslint-disable-line lodash-fp/use-fp
 
 export const validateUrl = (feeds, url) => {
@@ -6,7 +7,7 @@ export const validateUrl = (feeds, url) => {
   return validator.isURL(url) && !sameFeed;
 };
 
-export const parseRss = (data, feeds) => {
+export const parseRss = (data) => {
   const domParser = new DOMParser();
   const domTree = domParser.parseFromString(data, 'application/xml');
   const parserError = domTree.querySelector('parsererror');
@@ -14,31 +15,39 @@ export const parseRss = (data, feeds) => {
     throw new Error('Wrong data format: \'application/xml\'-method can not parse it');
   }
   const title = domTree.querySelector('channel title').textContent;
-  const sameFeed = feeds.find(feed => feed.title === title);
-  if (sameFeed) {
-    throw new Error(`SameFeed already exists:\n  id- ${sameFeed.feedId}\n  Title- ${sameFeed.title}`);
-  }
   const description = domTree.querySelector('channel description').textContent;
 
-  const postsList = [...domTree.querySelectorAll('item')].map((item) => {
+  const itemsList = [...domTree.querySelectorAll('item')].map((item) => {
     const postTitle = item.querySelector('title').textContent;
     const postUrl = item.querySelector('link').textContent;
     const postDescription = item.querySelector('description').textContent;
     return { postTitle, postUrl, postDescription };
   }).reverse();
-  return { title, description, postsList };
+  return { title, description, itemsList };
 };
 
-export const updatePosts = (postsList, currentFeedId, appState) => {
-  const { posts } = appState;
+export const updatePosts = (itemsList, currentFeedId, posts) => {
   const { all } = posts;
   const currentFeedAllPosts = all[currentFeedId] ? all[currentFeedId] : [];
-  const newPosts = _.differenceBy(postsList, currentFeedAllPosts, 'postTitle');
-  const newPostsWithId = newPosts.map((post, i) => {
-    currentFeedAllPosts.push(post);
-    const postId = `${currentFeedId}-post${i + 1}`;
+  const newPosts = _.differenceBy(itemsList, currentFeedAllPosts, 'postTitle');
+  const newPostsWithId = newPosts.map((post) => {
+    const postId = `${currentFeedId}-post${currentFeedAllPosts.length}`;
+    currentFeedAllPosts.push({ ...post, postId });
     return { ...post, postId };
   });
   all[currentFeedId] = currentFeedAllPosts;
-  posts.fresh = newPostsWithId;
+  return [currentFeedId, newPostsWithId];
+};
+
+export const refreshFeeds = ([currentFeed, ...restFeeds], appState, finalColl = []) => {
+  const { posts } = appState;
+  if (!currentFeed) {
+    posts.fresh = finalColl;
+    return;
+  }
+  const { feedId, url } = currentFeed;
+  axios.get(`https://cors-anywhere.herokuapp.com/${url}`)
+    .then(({ data }) => parseRss(data))
+    .then(({ itemsList }) => updatePosts(itemsList, feedId, posts))
+    .then(freshPosts => refreshFeeds(restFeeds, appState, [...finalColl, freshPosts]));
 };

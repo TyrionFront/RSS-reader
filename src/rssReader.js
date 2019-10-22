@@ -1,9 +1,12 @@
 import axios from 'axios';
 import { watch } from 'melanke-watchjs';
 import i18next from 'i18next';
+import _ from 'lodash'; // eslint-disable-line lodash-fp/use-fp
 import resources from '../locales/descriptions';
-import { validateUrl, parseRss, updatePosts } from './processors';
-import { makePostsList, makeFeedItem } from './htmlMakers';
+import {
+  validateUrl, parseRss, updatePosts, refreshFeeds,
+} from './processors';
+import { makePostsList, makeFeedItem, displayHidePosts } from './htmlMakers';
 
 export default () => {
   i18next.init({
@@ -20,7 +23,12 @@ export default () => {
       url: '',
       responseStatus: '',
     },
-    feeds: [],
+    feeds: {
+      state: 'not-updating',
+      activeFeedId: '',
+      timerId: '',
+      list: [],
+    },
     posts: {
       fresh: [],
       all: {},
@@ -35,6 +43,15 @@ export default () => {
   const loadingIndicator = document.getElementById('linkLoading');
   const feedsListTag = document.getElementById('rssFeeds');
   const newsTag = document.getElementById('news');
+  const feedsBadges = {};
+  const addedFeeds = {};
+  const publishedPosts = new Map();
+
+  const markActiveFeed = ({ currentTarget }) => {
+    const { activeFeedId } = appState.feeds;
+    const currentId = currentTarget.id;
+    appState.feeds.activeFeedId = activeFeedId !== currentId ? currentId : `sameFeed-${currentId}`;
+  };
 
   watch(appState.form, 'urlState', () => {
     const { urlState } = appState.form;
@@ -76,49 +93,91 @@ export default () => {
     }
   });
 
-  watch(appState, 'feeds', () => {
-    makeFeedItem(appState.feeds, feedsListTag);
+  watch(appState.feeds, 'list', () => {
+    makeFeedItem(appState.feeds.list, feedsListTag, markActiveFeed);
   });
 
   watch(appState.posts, 'fresh', () => {
-    const { fresh } = appState.posts;
-    makePostsList(fresh, newsTag);
+    const { fresh, all } = appState.posts;
+    const [activeFeedIdValue] = appState.feeds.activeFeedId.split('-');
+    fresh.forEach((freshPosts) => {
+      const [currentFeedId] = freshPosts;
+      let currentFeedBadge = feedsBadges[currentFeedId];
+      if (!currentFeedBadge) {
+        currentFeedBadge = document.getElementById(`${currentFeedId}-badge`);
+        feedsBadges[currentFeedId] = currentFeedBadge;
+      }
+      makePostsList(freshPosts, newsTag, activeFeedIdValue, publishedPosts);
+      currentFeedBadge.innerText = all[currentFeedId].length;
+    });
+  });
+
+  watch(appState.feeds, 'activeFeedId', () => {
+    const { activeFeedId } = appState.feeds;
+    const [activeIdValue, sameFeedId] = activeFeedId.split('-');
+    displayHidePosts(activeIdValue, publishedPosts);
+    if (activeIdValue === 'sameFeed') {
+      const feedElem = _.find(addedFeeds, ({ id }) => id === sameFeedId);
+      feedElem.classList.toggle('active');
+      return;
+    }
+    let currentFeed = addedFeeds[activeIdValue];
+    if (!currentFeed) {
+      currentFeed = document.getElementById(activeIdValue);
+      addedFeeds[activeIdValue] = currentFeed;
+    }
+    const prevActiveFeed = _.find(addedFeeds, ({ classList }) => classList.contains('active'));
+    const feedsPair = prevActiveFeed ? [currentFeed, prevActiveFeed] : [currentFeed];
+    feedsPair.forEach(({ classList }) => classList.toggle('active'));
   });
 
 
   inputField.addEventListener('input', ({ target }) => {
-    const { form } = appState;
+    const { form, feeds } = appState;
     const { value } = target;
     form.state = 'onInput';
     if (value.length === 0) {
       form.urlState = 'empty';
       return;
     }
-    const isLinkValid = validateUrl(appState.feeds, value);
+    const isLinkValid = validateUrl(feeds.list, value);
     form.urlState = isLinkValid ? 'is-valid' : 'is-invalid';
     form.url = isLinkValid ? value : '';
   });
 
   addRssForm.addEventListener('submit', (e) => {
     e.preventDefault();
-    const { form, feeds } = appState;
+    const { form, feeds, posts } = appState;
     form.state = 'processing';
     axios.get(`https://cors-anywhere.herokuapp.com/${form.url}`)
       .then(({ data }) => {
-        const parsedData = parseRss(data, feeds);
+        const parsedData = parseRss(data);
         form.state = 'processed';
         form.urlState = 'empty';
         return parsedData;
       })
-      .then(({ title, description, postsList }) => {
-        const feedsListSize = feeds.length;
-        const feedId = `rssFeed${feedsListSize + 1}`;
-        updatePosts(postsList, feedId, appState);
-        const currentFeedAllPostsSize = appState.posts.all[feedId].length;
+      .then(({ title, description, itemsList }) => {
+        const sameFeed = feeds.list.find(feed => feed.title === title);
+        if (sameFeed) {
+          throw new Error(`SameFeed already exists:\n  id- ${sameFeed.feedId}\n  Title- ${sameFeed.title}`);
+        }
+        const feedId = `rssFeed${feeds.list.length + 1}`;
         const newFeed = {
-          feedId, title, description, currentFeedAllPostsSize, url: form.url,
+          feedId, title, description, postsCount: itemsList.length, url: form.url,
         };
-        appState.feeds.push(newFeed);
+        feeds.list.push(newFeed);
+        appState.posts.fresh = [updatePosts(itemsList, feedId, posts)];
+
+        if (feeds.state === 'not-updating') {
+          feeds.state = 'updating';
+          const refresh = () => {
+            feeds.timerId = setTimeout(() => {
+              refreshFeeds(appState.feeds.list, appState);
+              feeds.timerId = setTimeout(refresh, 30000);
+            }, 30000);
+          };
+          refresh();
+        }
       })
       .catch((err) => {
         form.urlState = 'is-invalid';
