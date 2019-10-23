@@ -3,10 +3,15 @@
 <head>
   <meta charset="utf-8">
   <title>RSS-reader</title>
+  <style>
+    #rssFeeds::-webkit-scrollbar {
+      width: 0;
+    }
+  </style>
 </head>
 
 <body style="background: no-repeat url(./img/freshNews.jpg); background-size: cover;
-  background-attachment: fixed; height: 100vh;">
+  background-attachment: fixed; height: 100vh; overflow: hidden;">
   <div class="container-fluid">
     <div class="fixed-top">
       <div class="jumbotron w-100 px-3 py-2 my-0 border border-primary" id="jumbotron">
@@ -42,10 +47,20 @@
     </div>
     <div id="content" class="row mt-5 px-3 pt-5 d-none">
       <div class="col-4">
-        <ul class="list-group mx-0" id="rssFeeds"></ul>
+        <ul class="list-group mx-0" id="rssFeeds" style="max-height: calc(100vh - 150px); margin-bottom: 10px; overflow: scroll;
+        overflow-x: hidden;"></ul>
       </div>
       <div class="col-8 border-left border-info">
-        <ul class="list-group" id="news"></ul>
+        <ul class="list-group" id="news" style="max-height: calc(100vh - 150px); margin-bottom: 10px; overflow: scroll;
+        overflow-x: hidden;"></ul>
+      </div>
+    </div>
+    <div class="jumbotron w-100 px-3 py-2 my-0 border border-primary fixed-bottom">
+      <div class="input-group mb-0">
+        <div class="input-group-prepend">
+          <button class="btn btn-outline-secondary" type="button" id="makeSearch" disabled>search in published</button>
+        </div>
+        <input id="newsSearch" type="text" class="form-control ml-2" placeholder="type post title here" aria-label="Search in published posts" aria-describedby="makeSearch">
       </div>
     </div>
   </div>

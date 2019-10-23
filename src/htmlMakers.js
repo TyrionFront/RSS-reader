@@ -12,18 +12,18 @@ export const makeFeedItem = (feeds, feedsListTag, markActive) => {
   const {
     feedId, title, description, postsCount,
   } = feeds[length - 1];
-  const newFeedItem = document.createElement('li');
-  newFeedItem.className = 'list-group-item list-group-item-action rounded border mb-1 d-block';
-  newFeedItem.id = `${feedId}`;
-  newFeedItem.addEventListener('click', markActive);
-  newFeedItem.innerHTML = `<div class="d-flex justify-content-center">
+  const newFeedElem = document.createElement('li');
+  newFeedElem.className = 'list-group-item list-group-item-action rounded border mb-1 d-block';
+  newFeedElem.id = `${feedId}`;
+  newFeedElem.addEventListener('click', markActive);
+  newFeedElem.innerHTML = `<div class="d-flex justify-content-center">
     <h5 class="flex-fill mb-1">${title}</h5>
       <div>
         <span id="${feedId}-badge" class="badge badge-success badge-pill mb-0">${postsCount}</span>
       </div>
   </div>
   <p class="flex-fill mb-1">${description}</p>`;
-  feedsListTag.prepend(newFeedItem);
+  feedsListTag.prepend(newFeedElem);
 };
 
 export const makePostsList = (freshPosts, postsTag, activeFeedId, postElements) => {
@@ -38,7 +38,7 @@ export const makePostsList = (freshPosts, postsTag, activeFeedId, postElements) 
 
     const visualization = !activeFeedId || activeFeedId === 'sameFeed' || activeFeedId === currentFeedId ? '' : 'd-none';
     newStoryTag.outerHTML = `<li class="${currentFeedId} list-group-item rounded border mb-1 ${visualization}" id="${postId}">
-      <a href="${postUrl}">${postTitle}</a>
+      <a href="${postUrl}" target="_blank">${postTitle}</a>
       <button type="button" class="btn btn-outline-info btn-sm ml-3" data-toggle="modal" data-target="#modal-${postId}">
         read more</button>
       <div class="modal fade bd-example-modal-lg" id="modal-${postId}" role="dialog" tabindex="-1"
@@ -62,7 +62,7 @@ export const makePostsList = (freshPosts, postsTag, activeFeedId, postElements) 
 
 export const displayHidePosts = (activeFeedId, postElements) => {
   switch (activeFeedId) {
-    case 'sameFeed':
+    case 'sameFeed' || '':
       postElements.forEach(({ classList }) => classList.remove('d-none'));
       break;
     default:

@@ -31,7 +31,7 @@ export const updatePosts = (itemsList, currentFeedId, posts) => {
   const currentFeedAllPosts = all[currentFeedId] ? all[currentFeedId] : [];
   const newPosts = _.differenceBy(itemsList, currentFeedAllPosts, 'postTitle');
   const newPostsWithId = newPosts.map((post) => {
-    const postId = `${currentFeedId}-post${currentFeedAllPosts.length}`;
+    const postId = `${currentFeedId}-post${currentFeedAllPosts.length + 1}`;
     currentFeedAllPosts.push({ ...post, postId });
     return { ...post, postId };
   });
@@ -39,15 +39,17 @@ export const updatePosts = (itemsList, currentFeedId, posts) => {
   return [currentFeedId, newPostsWithId];
 };
 
-export const refreshFeeds = ([currentFeed, ...restFeeds], appState, finalColl = []) => {
+export const refreshFeeds = ([currentFeed, ...restFeeds], appState) => {
   const { posts } = appState;
   if (!currentFeed) {
-    posts.fresh = finalColl;
     return;
   }
   const { feedId, url } = currentFeed;
   axios.get(`https://cors-anywhere.herokuapp.com/${url}`)
     .then(({ data }) => parseRss(data))
     .then(({ itemsList }) => updatePosts(itemsList, feedId, posts))
-    .then(freshPosts => refreshFeeds(restFeeds, appState, [...finalColl, freshPosts]));
+    .then((freshPosts) => {
+      posts.fresh = freshPosts;
+      setTimeout(() => refreshFeeds(restFeeds, appState), 0);
+    });
 };

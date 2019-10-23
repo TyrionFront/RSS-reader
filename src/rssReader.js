@@ -33,6 +33,11 @@ export default () => {
       fresh: [],
       all: {},
     },
+    search: {
+      state: 'empty',
+      text: '',
+      postsIdsList: [],
+    },
   };
 
   const mainTitles = document.getElementById('mainTitles');
@@ -43,9 +48,21 @@ export default () => {
   const loadingIndicator = document.getElementById('linkLoading');
   const feedsListTag = document.getElementById('rssFeeds');
   const newsTag = document.getElementById('news');
+  const searchInput = document.getElementById('newsSearch');
+  const searchButton = document.getElementById('makeSearch');
   const feedsBadges = {};
-  const addedFeeds = {};
+  const feedElements = {};
   const publishedPosts = new Map();
+
+  const getElement = (coll, ...ids) => {
+    const tagId = ids.length > 1 ? `${ids.join('-')}` : ids;
+    let htmlTag = coll[tagId];
+    if (!htmlTag) {
+      htmlTag = document.getElementById(tagId);
+      coll[tagId] = htmlTag; // eslint-disable-line no-param-reassign
+    }
+    return htmlTag;
+  };
 
   const markActiveFeed = ({ currentTarget }) => {
     const { activeFeedId } = appState.feeds;
@@ -100,37 +117,42 @@ export default () => {
   watch(appState.posts, 'fresh', () => {
     const { fresh, all } = appState.posts;
     const [activeFeedIdValue] = appState.feeds.activeFeedId.split('-');
-    fresh.forEach((freshPosts) => {
-      const [currentFeedId] = freshPosts;
-      let currentFeedBadge = feedsBadges[currentFeedId];
-      if (!currentFeedBadge) {
-        currentFeedBadge = document.getElementById(`${currentFeedId}-badge`);
-        feedsBadges[currentFeedId] = currentFeedBadge;
-      }
-      makePostsList(freshPosts, newsTag, activeFeedIdValue, publishedPosts);
-      currentFeedBadge.innerText = all[currentFeedId].length;
-    });
+    const [currentFeedId] = fresh;
+    const currentFeedBadge = getElement(feedsBadges, currentFeedId, 'badge');
+    makePostsList(fresh, newsTag, activeFeedIdValue, publishedPosts);
+    currentFeedBadge.innerText = all[currentFeedId].length;
   });
 
   watch(appState.feeds, 'activeFeedId', () => {
     const { activeFeedId } = appState.feeds;
-    const [activeIdValue, sameFeedId] = activeFeedId.split('-');
+    const [activeIdValue, sameId] = activeFeedId.split('-');
     displayHidePosts(activeIdValue, publishedPosts);
     if (activeIdValue === 'sameFeed') {
-      const feedElem = _.find(addedFeeds, ({ id }) => id === sameFeedId);
-      feedElem.classList.toggle('active');
+      const currentFeedElem = feedElements[sameId];
+      currentFeedElem.classList.toggle('active');
       return;
     }
-    let currentFeed = addedFeeds[activeIdValue];
-    if (!currentFeed) {
-      currentFeed = document.getElementById(activeIdValue);
-      addedFeeds[activeIdValue] = currentFeed;
-    }
-    const prevActiveFeed = _.find(addedFeeds, ({ classList }) => classList.contains('active'));
+    const currentFeed = getElement(feedElements, activeIdValue);
+    const prevActiveFeed = _.find(feedElements, ({ classList }) => classList.contains('active'));
     const feedsPair = prevActiveFeed ? [currentFeed, prevActiveFeed] : [currentFeed];
     feedsPair.forEach(({ classList }) => classList.toggle('active'));
   });
 
+  watch(appState.search, 'state', () => {
+    const { search } = appState;
+    searchInput.className = 'form-control ml-2';
+    // eslint-disable-next-line default-case
+    switch (search.state) {
+      case 'noMatches':
+        searchButton.disabled = true;
+        searchInput.classList.add('is-invalid');
+        break;
+      case 'hasValues':
+        searchInput.classList.add('is-valid');
+        searchButton.disabled = false;
+        break;
+    }
+  });
 
   inputField.addEventListener('input', ({ target }) => {
     const { form, feeds } = appState;
@@ -166,7 +188,7 @@ export default () => {
           feedId, title, description, postsCount: itemsList.length, url: form.url,
         };
         feeds.list.push(newFeed);
-        appState.posts.fresh = [updatePosts(itemsList, feedId, posts)];
+        posts.fresh = updatePosts(itemsList, feedId, posts);
 
         if (feeds.state === 'not-updating') {
           feeds.state = 'updating';
@@ -190,5 +212,23 @@ export default () => {
         form.responseStatus = statusType;
         throw new Error(err);
       });
+  });
+
+  searchInput.addEventListener('input', ({ target }) => {
+    const { search } = appState;
+    const { value } = target;
+    if (value.length === 0) {
+      search.state = 'empty';
+      return;
+    }
+    const flatColl = _.flatMap(appState.posts.all);
+    const ids = [];
+    flatColl.forEach(({ postTitle, postId }) => {
+      if (postTitle.toLowerCase().includes(value)) {
+        ids.push(postId);
+      }
+    });
+    search.postsIdsList = ids;
+    search.state = ids.length > 0 ? 'hasValues' : 'noMatches';
   });
 };
