@@ -141,10 +141,9 @@ export default () => {
   watch(appState.search, 'state', () => {
     const { search } = appState;
     searchInput.className = 'form-control ml-2';
-    // eslint-disable-next-line default-case
-    switch (search.state) {
+    searchButton.disabled = true;
+    switch (search.state) { // eslint-disable-line default-case
       case 'noMatches':
-        searchButton.disabled = true;
         searchInput.classList.add('is-invalid');
         break;
       case 'hasValues':
@@ -217,12 +216,13 @@ export default () => {
   searchInput.addEventListener('input', ({ target }) => {
     const { search } = appState;
     const { value } = target;
+    const ids = [];
     if (value.length === 0) {
+      search.postsIdsList = ids;
       search.state = 'empty';
       return;
     }
     const flatColl = _.flatMap(appState.posts.all);
-    const ids = [];
     flatColl.forEach(({ postTitle, postId }) => {
       if (postTitle.toLowerCase().includes(value)) {
         ids.push(postId);
