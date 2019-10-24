@@ -33,9 +33,10 @@ export default () => {
       all: [],
     },
     search: {
-      state: 'empty',
+      state: 'onInput',
+      inputState: 'empty',
       text: '',
-      postsIdsList: new Set(),
+      selectedIds: new Set(),
     },
   };
 
@@ -125,8 +126,13 @@ export default () => {
 
   watch(appState.feeds, 'activeFeedId', () => {
     const { activeFeedId } = appState.feeds;
+    const { selectedIds, state } = appState.search;
     const [activeIdValue, sameId] = activeFeedId.split('-');
-    displayHidePosts(activeIdValue, publishedPosts);
+    const args = [activeIdValue, publishedPosts];
+    if (state === 'hasValues') {
+      args.push(selectedIds);
+    }
+    displayHidePosts(...args);
     if (activeIdValue === 'sameFeed') {
       const currentFeedElem = feedElements[sameId];
       currentFeedElem.classList.toggle('active');
@@ -138,18 +144,31 @@ export default () => {
     feedsPair.forEach(({ classList }) => classList.toggle('active'));
   });
 
-  watch(appState.search, 'state', () => {
+  watch(appState.search, 'inputState', () => {
     const { search } = appState;
     searchInput.className = 'form-control ml-2';
     searchButton.disabled = true;
-    switch (search.state) { // eslint-disable-line default-case
+    switch (search.inputState) { // eslint-disable-line default-case
       case 'noMatches':
         searchInput.classList.add('is-invalid');
         break;
-      case 'hasValues':
+      case 'matched':
         searchInput.classList.add('is-valid');
         searchButton.disabled = false;
         break;
+    }
+  });
+
+  watch(appState.search, 'state', () => {
+    const { selectedIds, state } = appState.search;
+    const [activeFeedId] = appState.feeds.activeFeedId.split('-');
+    switch (state) { // eslint-disable-line default-case
+      case 'empty':
+        displayHidePosts(activeFeedId, publishedPosts);
+        break;
+      case 'hasValues':
+        searchButton.disabled = true;
+        displayHidePosts(activeFeedId, publishedPosts, selectedIds);
     }
   });
 
@@ -165,24 +184,24 @@ export default () => {
 
   searchInput.addEventListener('input', ({ target }) => {
     const { search, posts } = appState;
+    search.state = 'onInput';
+    search.selectedIds.clear();
     const { value } = target;
     if (value.length === 0) {
-      search.postsIdsList.clear();
       search.state = 'empty';
+      search.inputState = 'empty';
       return;
     }
-    const ids = new Set();
     posts.all.forEach(({ postTitle, postId }) => {
       if (postTitle.toLowerCase().includes(value) && !value.includes(' ')) {
-        ids.add(postId);
+        search.selectedIds.add(postId);
       }
     });
-    console.log(ids);
-    search.postsIdsList = ids;
-    search.state = ids.size > 0 ? 'hasValues' : 'noMatches';
+    search.inputState = search.selectedIds.size > 0 ? 'matched' : 'noMatches';
   });
 
   searchButton.addEventListener('click', (e) => {
     e.preventDefault();
+    appState.search.state = 'hasValues';
   });
 };

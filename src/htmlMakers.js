@@ -26,7 +26,7 @@ export const makeFeedItem = (feeds, feedsListTag, markActive) => {
   feedsListTag.prepend(newFeedElem);
 };
 
-export const makePostsList = (freshPosts, postsTag, activeFeedId, postElements) => {
+export const makePostsList = (freshPosts, postsTag, activeFeedId, publishedPosts) => {
   const descriptionBuffer = document.createElement('div');
   const [currentFeedId, posts] = freshPosts;
   posts.forEach((post) => {
@@ -56,34 +56,35 @@ export const makePostsList = (freshPosts, postsTag, activeFeedId, postElements) 
         </div>
       </div>
     </li>`;
-    postElements.set(postId, document.getElementById(postId));
+    publishedPosts.set(postId, document.getElementById(postId));
   });
 };
 
+const giveDisplayFns = () => [
+  {
+    check: (feedId, postIds) => (feedId === 'sameFeed' || feedId === '') && !postIds,
+    displayFn: postsColl => postsColl.forEach(({ classList }) => classList.remove('d-none')),
+  },
+  {
+    check: (feedId, postIds) => (feedId === 'sameFeed' || feedId === '') && postIds,
+    displayFn: (postsColl, ids) => postsColl
+      .forEach(({ classList, id }) => (ids.has(id)
+        ? classList.remove('d-none') : classList.add('d-none'))),
+  },
+  {
+    check: (feedId, postIds) => feedId && !postIds,
+    displayFn: (postsColl, ids, activeFeedId) => postsColl.forEach(({ classList }) => (
+      classList.contains(activeFeedId) ? classList.remove('d-none') : classList.add('d-none'))),
+  },
+  {
+    check: (feedId, postIds) => feedId && postIds,
+    displayFn: (postsColl, ids, activeFeedId) => postsColl
+      .forEach(({ classList, id }) => (classList.contains(activeFeedId) && ids.has(id)
+        ? classList.remove('d-none') : classList.add('d-none'))),
+  },
+];
+
 export const displayHidePosts = (activeFeedId, postElements, selectedIds) => {
-  const displayingTypes = [
-    {
-      check: (feedId, postIds) => (feedId === 'sameFeed' || feedId === '') && !postIds,
-      displayFn: () => postElements.forEach(({ classList }) => classList.remove('d-none')),
-    },
-    {
-      check: (feedId, postIds) => (feedId === 'sameFeed' || feedId === '') && postIds,
-      displayFn: () => postElements
-        .forEach(({ classList, id }) => (selectedIds.has(id)
-          ? classList.remove('d-none') : classList.add('d-none'))),
-    },
-    {
-      check: (feedId, postIds) => feedId && !postIds,
-      displayFn: () => postElements.forEach(({ classList }) => (
-        classList.contains(activeFeedId) ? classList.remove('d-none') : classList.add('d-none'))),
-    },
-    {
-      check: (feedId, postIds) => feedId && postIds,
-      displayFn: () => postElements
-        .forEach(({ classList, id }) => (classList.contains(activeFeedId) && selectedIds.has(id)
-          ? classList.remove('d-none') : classList.add('d-none'))),
-    },
-  ];
-  const { displayFn } = displayingTypes.find(({ check }) => check(activeFeedId, selectedIds));
-  displayFn();
+  const { displayFn } = giveDisplayFns().find(({ check }) => check(activeFeedId, selectedIds));
+  displayFn(postElements, selectedIds, activeFeedId);
 };
