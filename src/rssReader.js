@@ -1,10 +1,9 @@
-import axios from 'axios';
 import { watch } from 'melanke-watchjs';
 import i18next from 'i18next';
 import _ from 'lodash'; // eslint-disable-line lodash-fp/use-fp
 import resources from '../locales/descriptions';
 import {
-  validateUrl, parseRss, updatePosts, refreshFeeds,
+  processTypedUrl, processFormData,
 } from './processors';
 import { makePostsList, makeFeedItem, displayHidePosts } from './htmlMakers';
 
@@ -31,19 +30,19 @@ export default () => {
     },
     posts: {
       fresh: [],
-      all: {},
+      all: [],
     },
     search: {
       state: 'empty',
       text: '',
-      postsIdsList: [],
+      postsIdsList: new Set(),
     },
   };
 
   const mainTitles = document.getElementById('mainTitles');
   const content = document.getElementById('content');
   const addRssForm = document.getElementById('addRss');
-  const [addLinkBtn, inputField] = addRssForm.elements;
+  const [addLinkBtn, urlInputField] = addRssForm.elements;
   const warningNode = document.getElementById('wrongInput');
   const loadingIndicator = document.getElementById('linkLoading');
   const feedsListTag = document.getElementById('rssFeeds');
@@ -72,21 +71,21 @@ export default () => {
 
   watch(appState.form, 'urlState', () => {
     const { urlState } = appState.form;
-    inputField.className = 'form-control';
+    urlInputField.className = 'form-control';
     switch (urlState) { // eslint-disable-line default-case
       case 'is-valid':
-        inputField.classList.add(urlState);
+        urlInputField.classList.add(urlState);
         addLinkBtn.disabled = false;
         break;
       case 'is-invalid':
-        inputField.classList.add(urlState);
+        urlInputField.classList.add(urlState);
         break;
     }
   });
 
   watch(appState.form, 'state', () => {
     const { state, responseStatus } = appState.form;
-    inputField.disabled = false;
+    urlInputField.disabled = false;
     warningNode.classList.add('d-none');
     addLinkBtn.disabled = true;
     addLinkBtn.classList.replace('align-self-end', 'align-self-start');
@@ -94,12 +93,12 @@ export default () => {
     switch (state) { // eslint-disable-line default-case
       case 'processing':
         [...loadingIndicator.children].forEach(({ classList }) => classList.remove('d-none'));
-        inputField.disabled = true;
-        inputField.className = 'form-control';
+        urlInputField.disabled = true;
+        urlInputField.className = 'form-control';
         addLinkBtn.classList.replace('align-self-start', 'align-self-end');
         break;
       case 'processed':
-        inputField.value = '';
+        urlInputField.value = '';
         mainTitles.classList.remove('d-none');
         content.classList.remove('d-none');
         break;
@@ -112,15 +111,16 @@ export default () => {
 
   watch(appState.feeds, 'list', () => {
     makeFeedItem(appState.feeds.list, feedsListTag, markActiveFeed);
-  });
+  }, 1);
 
   watch(appState.posts, 'fresh', () => {
-    const { fresh, all } = appState.posts;
+    const { fresh } = appState.posts;
     const [activeFeedIdValue] = appState.feeds.activeFeedId.split('-');
     const [currentFeedId] = fresh;
+    const { postsCount } = _.find(appState.feeds.list, ['feedId', currentFeedId]);
     const currentFeedBadge = getElement(feedsBadges, currentFeedId, 'badge');
     makePostsList(fresh, newsTag, activeFeedIdValue, publishedPosts);
-    currentFeedBadge.innerText = all[currentFeedId].length;
+    currentFeedBadge.innerText = postsCount;
   });
 
   watch(appState.feeds, 'activeFeedId', () => {
@@ -153,82 +153,36 @@ export default () => {
     }
   });
 
-  inputField.addEventListener('input', ({ target }) => {
-    const { form, feeds } = appState;
+  urlInputField.addEventListener('input', ({ target }) => {
     const { value } = target;
-    form.state = 'onInput';
-    if (value.length === 0) {
-      form.urlState = 'empty';
-      return;
-    }
-    const isLinkValid = validateUrl(feeds.list, value);
-    form.urlState = isLinkValid ? 'is-valid' : 'is-invalid';
-    form.url = isLinkValid ? value : '';
+    processTypedUrl(appState, value);
   });
 
   addRssForm.addEventListener('submit', (e) => {
     e.preventDefault();
-    const { form, feeds, posts } = appState;
-    form.state = 'processing';
-    axios.get(`https://cors-anywhere.herokuapp.com/${form.url}`)
-      .then(({ data }) => {
-        const parsedData = parseRss(data);
-        form.state = 'processed';
-        form.urlState = 'empty';
-        return parsedData;
-      })
-      .then(({ title, description, itemsList }) => {
-        const sameFeed = feeds.list.find(feed => feed.title === title);
-        if (sameFeed) {
-          throw new Error(`SameFeed already exists:\n  id- ${sameFeed.feedId}\n  Title- ${sameFeed.title}`);
-        }
-        const feedId = `rssFeed${feeds.list.length + 1}`;
-        const newFeed = {
-          feedId, title, description, postsCount: itemsList.length, url: form.url,
-        };
-        feeds.list.push(newFeed);
-        posts.fresh = updatePosts(itemsList, feedId, posts);
-
-        if (feeds.state === 'not-updating') {
-          feeds.state = 'updating';
-          const refresh = () => {
-            feeds.timerId = setTimeout(() => {
-              refreshFeeds(appState.feeds.list, appState);
-              feeds.timerId = setTimeout(refresh, 30000);
-            }, 30000);
-          };
-          refresh();
-        }
-      })
-      .catch((err) => {
-        form.urlState = 'is-invalid';
-        form.state = 'failed';
-        if (err.response) {
-          form.responseStatus = err.response.status;
-          throw new Error(err);
-        }
-        const [statusType] = err.message.split(' ');
-        form.responseStatus = statusType;
-        throw new Error(err);
-      });
+    processFormData(appState);
   });
 
   searchInput.addEventListener('input', ({ target }) => {
-    const { search } = appState;
+    const { search, posts } = appState;
     const { value } = target;
-    const ids = [];
     if (value.length === 0) {
-      search.postsIdsList = ids;
+      search.postsIdsList.clear();
       search.state = 'empty';
       return;
     }
-    const flatColl = _.flatMap(appState.posts.all);
-    flatColl.forEach(({ postTitle, postId }) => {
-      if (postTitle.toLowerCase().includes(value)) {
-        ids.push(postId);
+    const ids = new Set();
+    posts.all.forEach(({ postTitle, postId }) => {
+      if (postTitle.toLowerCase().includes(value) && !value.includes(' ')) {
+        ids.add(postId);
       }
     });
+    console.log(ids);
     search.postsIdsList = ids;
-    search.state = ids.length > 0 ? 'hasValues' : 'noMatches';
+    search.state = ids.size > 0 ? 'hasValues' : 'noMatches';
+  });
+
+  searchButton.addEventListener('click', (e) => {
+    e.preventDefault();
   });
 };

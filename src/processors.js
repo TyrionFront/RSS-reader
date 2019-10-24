@@ -7,6 +7,18 @@ export const validateUrl = (feeds, url) => {
   return validator.isURL(url) && !sameFeed;
 };
 
+export const processTypedUrl = (appState, value) => {
+  const { form, feeds } = appState;
+  form.state = 'onInput';
+  if (value.length === 0) {
+    form.urlState = 'empty';
+    return;
+  }
+  const isLinkValid = validateUrl(feeds.list, value);
+  form.urlState = isLinkValid ? 'is-valid' : 'is-invalid';
+  form.url = isLinkValid ? value : '';
+};
+
 export const parseRss = (data) => {
   const domParser = new DOMParser();
   const domTree = domParser.parseFromString(data, 'application/xml');
@@ -26,30 +38,76 @@ export const parseRss = (data) => {
   return { title, description, itemsList };
 };
 
-export const updatePosts = (itemsList, currentFeedId, posts) => {
+export const updatePosts = (itemsList, currentFeedId, posts, feeds) => {
   const { all } = posts;
-  const currentFeedAllPosts = all[currentFeedId] ? all[currentFeedId] : [];
-  const newPosts = _.differenceBy(itemsList, currentFeedAllPosts, 'postTitle');
+  const currentFeed = _.find(feeds, ['feedId', currentFeedId]);
+  const newPosts = _.differenceBy(itemsList, all, 'postTitle');
   const newPostsWithId = newPosts.map((post) => {
-    const postId = `${currentFeedId}-post${currentFeedAllPosts.length + 1}`;
-    currentFeedAllPosts.push({ ...post, postId });
+    currentFeed.postsCount += 1;
+    const postId = `${currentFeedId}-post${currentFeed.postsCount}`;
+    all.push({ ...post, postId });
     return { ...post, postId };
   });
-  all[currentFeedId] = currentFeedAllPosts;
   return [currentFeedId, newPostsWithId];
 };
 
 export const refreshFeeds = ([currentFeed, ...restFeeds], appState) => {
-  const { posts } = appState;
+  const { posts, feeds } = appState;
   if (!currentFeed) {
     return;
   }
   const { feedId, url } = currentFeed;
   axios.get(`https://cors-anywhere.herokuapp.com/${url}`)
     .then(({ data }) => parseRss(data))
-    .then(({ itemsList }) => updatePosts(itemsList, feedId, posts))
+    .then(({ itemsList }) => updatePosts(itemsList, feedId, posts, feeds.list))
     .then((freshPosts) => {
       posts.fresh = freshPosts;
       setTimeout(() => refreshFeeds(restFeeds, appState), 0);
+    });
+};
+
+export const processFormData = (appState) => {
+  const { form, feeds, posts } = appState;
+  form.state = 'processing';
+  axios.get(`https://cors-anywhere.herokuapp.com/${form.url}`)
+    .then(({ data }) => {
+      const parsedData = parseRss(data);
+      form.state = 'processed';
+      form.urlState = 'empty';
+      return parsedData;
+    })
+    .then(({ title, description, itemsList }) => {
+      const sameFeed = feeds.list.find(feed => feed.title === title);
+      if (sameFeed) {
+        throw new Error(`SameFeed already exists:\n  id- ${sameFeed.feedId}\n  Title- ${sameFeed.title}`);
+      }
+      const feedId = `rssFeed${feeds.list.length + 1}`;
+      const newFeed = {
+        feedId, title, description, postsCount: 0, url: form.url,
+      };
+      feeds.list.push(newFeed);
+      posts.fresh = updatePosts(itemsList, feedId, posts, feeds.list);
+
+      if (feeds.state === 'not-updating') {
+        feeds.state = 'updating';
+        const refresh = () => {
+          feeds.timerId = setTimeout(() => {
+            refreshFeeds(appState.feeds.list, appState);
+            feeds.timerId = setTimeout(refresh, 30000);
+          }, 30000);
+        };
+        refresh();
+      }
+    })
+    .catch((err) => {
+      form.urlState = 'is-invalid';
+      form.state = 'failed';
+      if (err.response) {
+        form.responseStatus = err.response.status;
+        throw new Error(err);
+      }
+      const [statusType] = err.message.split(' ');
+      form.responseStatus = statusType;
+      throw new Error(err);
     });
 };
