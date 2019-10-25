@@ -29,12 +29,13 @@ export const parseRss = (data) => {
   const title = domTree.querySelector('channel title').textContent;
   const description = domTree.querySelector('channel description').textContent;
 
-  const itemsList = [...domTree.querySelectorAll('item')].map((item) => {
+  let itemsList = [];
+  [...domTree.querySelectorAll('item')].forEach((item) => {
     const postTitle = item.querySelector('title').textContent;
     const postUrl = item.querySelector('link').textContent;
     const postDescription = item.querySelector('description').textContent;
-    return { postTitle, postUrl, postDescription };
-  }).reverse();
+    itemsList = [{ postTitle, postUrl, postDescription }, ...itemsList];
+  });
   return { title, description, itemsList };
 };
 

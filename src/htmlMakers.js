@@ -26,19 +26,28 @@ export const makeFeedItem = (feeds, feedsListTag, markActive) => {
   feedsListTag.prepend(newFeedElem);
 };
 
-export const makePostsList = (freshPosts, postsTag, activeFeedId, publishedPosts) => {
+const visualize = (postId, selectedIds, predicate) => {
+  if (selectedIds.size > 0) {
+    return predicate && selectedIds.has(postId) ? '' : 'd-none';
+  }
+  return predicate ? '' : 'd-none';
+};
+
+export const makePostsList = (freshPosts, activeFeedId, selectedIds) => {
   const descriptionBuffer = document.createElement('div');
   const [currentFeedId, posts] = freshPosts;
+  const predicate = !activeFeedId || activeFeedId === 'sameFeed' || activeFeedId === currentFeedId;
+  let liColl = [];
   posts.forEach((post) => {
     const {
       postTitle, postUrl, postDescription, postId,
     } = post;
-    const newStoryTag = document.createElement('div');
-    postsTag.prepend(newStoryTag);
+    const newStoryTag = document.createElement('li');
+    const visualization = visualize(postId, selectedIds, predicate);
 
-    const visualization = !activeFeedId || activeFeedId === 'sameFeed' || activeFeedId === currentFeedId ? '' : 'd-none';
-    newStoryTag.outerHTML = `<li class="${currentFeedId} list-group-item rounded border mb-1 ${visualization}" id="${postId}">
-      <a href="${postUrl}" target="_blank">${postTitle}</a>
+    newStoryTag.className = `${currentFeedId} list-group-item rounded border mb-1 ${visualization}`;
+    newStoryTag.id = postId;
+    newStoryTag.innerHTML = `<a href="${postUrl}" target="_blank">${postTitle}</a>
       <button type="button" class="btn btn-outline-info btn-sm ml-3" data-toggle="modal" data-target="#modal-${postId}">
         read more</button>
       <div class="modal fade bd-example-modal-lg" id="modal-${postId}" role="dialog" tabindex="-1"
@@ -54,10 +63,10 @@ export const makePostsList = (freshPosts, postsTag, activeFeedId, publishedPosts
             <div class="modal-body">${getPureDescription(descriptionBuffer, postDescription)}</div>
           </div>
         </div>
-      </div>
-    </li>`;
-    publishedPosts.set(postId, document.getElementById(postId));
+      </div>`;
+    liColl = [newStoryTag, ...liColl];
   });
+  return liColl;
 };
 
 const giveDisplayFns = () => [
@@ -85,6 +94,7 @@ const giveDisplayFns = () => [
 ];
 
 export const displayHidePosts = (activeFeedId, postElements, selectedIds) => {
-  const { displayFn } = giveDisplayFns().find(({ check }) => check(activeFeedId, selectedIds));
+  const ids = selectedIds.size > 0 ? selectedIds : '';
+  const { displayFn } = giveDisplayFns().find(({ check }) => check(activeFeedId, ids));
   displayFn(postElements, selectedIds, activeFeedId);
 };

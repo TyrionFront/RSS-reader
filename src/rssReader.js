@@ -52,7 +52,6 @@ export default () => {
   const searchButton = document.getElementById('makeSearch');
   const feedsBadges = {};
   const feedElements = {};
-  const publishedPosts = new Map();
 
   const getElement = (coll, ...ids) => {
     const tagId = ids.length > 1 ? `${ids.join('-')}` : ids;
@@ -116,23 +115,20 @@ export default () => {
 
   watch(appState.posts, 'fresh', () => {
     const { fresh } = appState.posts;
-    const [activeFeedIdValue] = appState.feeds.activeFeedId.split('-');
+    const [activeFeedId] = appState.feeds.activeFeedId.split('-');
     const [currentFeedId] = fresh;
     const { postsCount } = _.find(appState.feeds.list, ['feedId', currentFeedId]);
     const currentFeedBadge = getElement(feedsBadges, currentFeedId, 'badge');
-    makePostsList(fresh, newsTag, activeFeedIdValue, publishedPosts);
+    const postsList = makePostsList(fresh, activeFeedId, appState.search.selectedIds);
+    newsTag.prepend(...postsList);
     currentFeedBadge.innerText = postsCount;
   });
 
   watch(appState.feeds, 'activeFeedId', () => {
     const { activeFeedId } = appState.feeds;
-    const { selectedIds, state } = appState.search;
+    const { selectedIds } = appState.search;
     const [activeIdValue, sameId] = activeFeedId.split('-');
-    const args = [activeIdValue, publishedPosts];
-    if (state === 'hasValues') {
-      args.push(selectedIds);
-    }
-    displayHidePosts(...args);
+    displayHidePosts(activeIdValue, [...newsTag.children], selectedIds);
     if (activeIdValue === 'sameFeed') {
       const currentFeedElem = feedElements[sameId];
       currentFeedElem.classList.toggle('active');
@@ -164,11 +160,12 @@ export default () => {
     const [activeFeedId] = appState.feeds.activeFeedId.split('-');
     switch (state) { // eslint-disable-line default-case
       case 'empty':
-        displayHidePosts(activeFeedId, publishedPosts);
+        displayHidePosts(activeFeedId, [...newsTag.children], selectedIds);
         break;
       case 'hasValues':
+        displayHidePosts(activeFeedId, [...newsTag.children], selectedIds);
         searchButton.disabled = true;
-        displayHidePosts(activeFeedId, publishedPosts, selectedIds);
+        break;
     }
   });
 
@@ -185,6 +182,7 @@ export default () => {
   searchInput.addEventListener('input', ({ target }) => {
     const { search, posts } = appState;
     search.state = 'onInput';
+    search.inputState = 'typing';
     search.selectedIds.clear();
     const { value } = target;
     if (value.length === 0) {
