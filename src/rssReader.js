@@ -3,7 +3,7 @@ import i18next from 'i18next';
 import _ from 'lodash'; // eslint-disable-line lodash-fp/use-fp
 import resources from '../locales/descriptions';
 import {
-  processTypedUrl, processFormData,
+  processTypedUrl, processFormData, processSearch,
 } from './processors';
 import { makePostsList, makeFeedItem, displayHidePosts } from './htmlMakers';
 
@@ -35,7 +35,6 @@ export default () => {
     search: {
       state: 'onInput',
       inputState: 'empty',
-      text: '',
       selectedIds: new Set(),
     },
   };
@@ -180,22 +179,8 @@ export default () => {
   });
 
   searchInput.addEventListener('input', ({ target }) => {
-    const { search, posts } = appState;
-    search.state = 'onInput';
-    search.inputState = 'typing';
-    search.selectedIds.clear();
     const { value } = target;
-    if (value.length === 0) {
-      search.state = 'empty';
-      search.inputState = 'empty';
-      return;
-    }
-    posts.all.forEach(({ postTitle, postId }) => {
-      if (postTitle.toLowerCase().includes(value) && !value.includes(' ')) {
-        search.selectedIds.add(postId);
-      }
-    });
-    search.inputState = search.selectedIds.size > 0 ? 'matched' : 'noMatches';
+    processSearch(appState, value);
   });
 
   searchButton.addEventListener('click', (e) => {

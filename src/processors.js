@@ -2,7 +2,7 @@ import validator from 'validator';
 import axios from 'axios';
 import _ from 'lodash'; // eslint-disable-line lodash-fp/use-fp
 
-export const validateUrl = (feeds, url) => {
+const validateUrl = (feeds, url) => {
   const sameFeed = feeds.find(feed => feed.url === url);
   return validator.isURL(url) && !sameFeed;
 };
@@ -39,7 +39,18 @@ export const parseRss = (data) => {
   return { title, description, itemsList };
 };
 
-export const updatePosts = (itemsList, currentFeedId, posts, feeds) => {
+const processFeed = (title, description, url, feedsList) => {
+  const sameFeed = feedsList.find(feed => feed.title === title);
+  if (sameFeed) {
+    throw new Error(`SameFeed already exists:\n  id- ${sameFeed.feedId}\n  Title- ${sameFeed.title}`);
+  }
+  const feedId = `rssFeed${feedsList.length + 1}`;
+  return {
+    feedId, title, description, postsCount: 0, url,
+  };
+};
+
+const processPosts = (itemsList, currentFeedId, posts, feeds) => {
   const { all } = posts;
   const currentFeed = _.find(feeds, ['feedId', currentFeedId]);
   const newPosts = _.differenceBy(itemsList, all, 'postTitle');
@@ -52,7 +63,7 @@ export const updatePosts = (itemsList, currentFeedId, posts, feeds) => {
   return [currentFeedId, newPostsWithId];
 };
 
-export const refreshFeeds = ([currentFeed, ...restFeeds], appState) => {
+const refreshFeeds = ([currentFeed, ...restFeeds], appState) => {
   const { posts, feeds } = appState;
   if (!currentFeed) {
     return;
@@ -60,7 +71,7 @@ export const refreshFeeds = ([currentFeed, ...restFeeds], appState) => {
   const { feedId, url } = currentFeed;
   axios.get(`https://cors-anywhere.herokuapp.com/${url}`)
     .then(({ data }) => parseRss(data))
-    .then(({ itemsList }) => updatePosts(itemsList, feedId, posts, feeds.list))
+    .then(({ itemsList }) => processPosts(itemsList, feedId, posts, feeds.list))
     .then((freshPosts) => {
       posts.fresh = freshPosts;
       setTimeout(() => refreshFeeds(restFeeds, appState), 0);
@@ -78,16 +89,9 @@ export const processFormData = (appState) => {
       return parsedData;
     })
     .then(({ title, description, itemsList }) => {
-      const sameFeed = feeds.list.find(feed => feed.title === title);
-      if (sameFeed) {
-        throw new Error(`SameFeed already exists:\n  id- ${sameFeed.feedId}\n  Title- ${sameFeed.title}`);
-      }
-      const feedId = `rssFeed${feeds.list.length + 1}`;
-      const newFeed = {
-        feedId, title, description, postsCount: 0, url: form.url,
-      };
+      const newFeed = processFeed(title, description, form.url, feeds.list);
       feeds.list.push(newFeed);
-      posts.fresh = updatePosts(itemsList, feedId, posts, feeds.list);
+      posts.fresh = processPosts(itemsList, newFeed.feedId, posts, feeds.list);
 
       if (feeds.state === 'not-updating') {
         feeds.state = 'updating';
@@ -111,4 +115,22 @@ export const processFormData = (appState) => {
       form.responseStatus = statusType;
       throw new Error(err);
     });
+};
+
+export const processSearch = (appState, value) => {
+  const { search, posts } = appState;
+  search.state = 'onInput';
+  search.inputState = 'typing';
+  search.selectedIds.clear();
+  if (value.length === 0) {
+    search.state = 'empty';
+    search.inputState = 'empty';
+    return;
+  }
+  posts.all.forEach(({ postTitle, postId }) => {
+    if (postTitle.toLowerCase().includes(value) && !value.includes(' ')) {
+      search.selectedIds.add(postId);
+    }
+  });
+  search.inputState = search.selectedIds.size > 0 ? 'matched' : 'noMatches';
 };
