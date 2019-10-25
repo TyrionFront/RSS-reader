@@ -70,14 +70,19 @@ export default () => {
 
   watch(appState.form, 'urlState', () => {
     const { urlState } = appState.form;
+    const [value, warning] = urlState.split(' ');
+    warningNode.classList.add('d-none');
     urlInputField.className = 'form-control';
-    switch (urlState) { // eslint-disable-line default-case
+    addLinkBtn.disabled = true;
+    switch (value) { // eslint-disable-line default-case
       case 'is-valid':
-        urlInputField.classList.add(urlState);
+        urlInputField.classList.add(value);
         addLinkBtn.disabled = false;
         break;
       case 'is-invalid':
-        urlInputField.classList.add(urlState);
+        urlInputField.classList.add(value);
+        warningNode.innerText = i18next.t([`${warning}`, 'unspecific']);
+        warningNode.classList.remove('d-none');
         break;
     }
   });

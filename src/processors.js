@@ -4,7 +4,15 @@ import _ from 'lodash'; // eslint-disable-line lodash-fp/use-fp
 
 const validateUrl = (feeds, url) => {
   const sameFeed = feeds.find(feed => feed.url === url);
-  return validator.isURL(url) && !sameFeed;
+  const isUrl = validator.isURL(url);
+  let warning;
+  if (sameFeed) {
+    warning = 'sameFeed';
+  }
+  if (!isUrl) {
+    warning = 'wrong';
+  }
+  return (isUrl && !sameFeed) || warning;
 };
 
 export const processTypedUrl = (appState, value) => {
@@ -15,7 +23,7 @@ export const processTypedUrl = (appState, value) => {
     return;
   }
   const isLinkValid = validateUrl(feeds.list, value);
-  form.urlState = isLinkValid ? 'is-valid' : 'is-invalid';
+  form.urlState = typeof isLinkValid === 'boolean' ? 'is-valid' : `is-invalid ${isLinkValid}`;
   form.url = isLinkValid ? value : '';
 };
 
