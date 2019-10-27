@@ -12,19 +12,19 @@ const validateUrl = (feeds, url) => {
   if (!isUrl) {
     warning = 'wrong';
   }
-  return (isUrl && !sameFeed) || warning;
+  return [isUrl && !sameFeed, warning];
 };
 
 export const processTypedUrl = (appState, value) => {
-  const { form, feeds } = appState;
-  form.state = 'onInput';
+  const { addRss, feeds } = appState;
+  addRss.state = 'onInput';
   if (value.length === 0) {
-    form.urlState = 'empty';
+    addRss.urlState = 'empty';
     return;
   }
-  const isLinkValid = validateUrl(feeds.list, value);
-  form.urlState = typeof isLinkValid === 'boolean' ? 'is-valid' : `is-invalid ${isLinkValid}`;
-  form.url = isLinkValid ? value : '';
+  const [isLinkValid, warning] = validateUrl(feeds.list, value);
+  addRss.urlState = isLinkValid ? 'is-valid' : `is-invalid ${warning}`;
+  addRss.url = isLinkValid ? value : '';
 };
 
 export const parseRss = (data) => {
@@ -87,17 +87,17 @@ const refreshFeeds = ([currentFeed, ...restFeeds], appState) => {
 };
 
 export const processFormData = (appState) => {
-  const { form, feeds, posts } = appState;
-  form.state = 'processing';
-  axios.get(`https://cors-anywhere.herokuapp.com/${form.url}`)
+  const { addRss, feeds, posts } = appState;
+  addRss.state = 'processing';
+  axios.get(`https://cors-anywhere.herokuapp.com/${addRss.url}`)
     .then(({ data }) => {
       const parsedData = parseRss(data);
-      form.state = 'processed';
-      form.urlState = 'empty';
+      addRss.state = 'processed';
+      addRss.urlState = 'empty';
       return parsedData;
     })
     .then(({ title, description, itemsList }) => {
-      const newFeed = processFeed(title, description, form.url, feeds.list);
+      const newFeed = processFeed(title, description, addRss.url, feeds.list);
       feeds.list.push(newFeed);
       posts.fresh = processPosts(itemsList, newFeed.feedId, posts, feeds.list);
 
@@ -113,14 +113,14 @@ export const processFormData = (appState) => {
       }
     })
     .catch((err) => {
-      form.urlState = 'is-invalid';
-      form.state = 'failed';
+      addRss.urlState = 'is-invalid';
+      addRss.state = 'failed';
       if (err.response) {
-        form.responseStatus = err.response.status;
+        addRss.responseStatus = err.response.status;
         throw new Error(err);
       }
       const [statusType] = err.message.split(' ');
-      form.responseStatus = statusType;
+      addRss.responseStatus = statusType;
       throw new Error(err);
     });
 };
@@ -135,10 +135,8 @@ export const processSearch = (appState, value) => {
     search.inputState = 'empty';
     return;
   }
-  posts.all.forEach(({ postTitle, postId }) => {
-    if (postTitle.toLowerCase().includes(value) && !value.includes(' ')) {
-      search.selectedIds.add(postId);
-    }
-  });
-  search.inputState = search.selectedIds.size > 0 ? 'matched' : 'noMatches';
+  const matchedPost = !value.includes(' ')
+    ? posts.all.find(({ postTitle }) => postTitle.toLowerCase().includes(value)) : '';
+  search.text = value;
+  search.inputState = matchedPost ? 'matched' : 'noMatches';
 };

@@ -12,55 +12,44 @@
 
 <body style="background: no-repeat url(./img/freshNews.jpg); background-size: cover;
   background-attachment: fixed; height: 100vh; overflow: hidden;">
-  <div class="container-fluid">
-    <div class="fixed-top">
-      <div class="jumbotron w-100 px-3 py-2 my-0 border border-primary" id="jumbotron">
-        <form id="addRss" class="d-flex needs-validation p-0" novalidate>
-          <button id="confirm" class="btn btn-outline-primary align-self-start" type="submit" disabled>
-            confirm adding rss
-          </button>
-          <div class="pr-0 pl-2 flex-fill">
-            <div id="linkLoading" class="d-flex align-items-center justify-content-center">
-              <strong class="text-info d-none">Loading...</strong>
-              <div class="spinner-border spinner-border-sm ml-3 text-info d-none" role="status" aria-hidden="true">
-              </div>
-            </div>
-            <input class="form-control" id="urlField" type="text" placeholder="Input rss-URL">
-            <div id="wrongInput" class="invalid-feedback d-none">
-              Error message
+  <div class="container-fluid px-0">
+    <div class="jumbotron w-100 px-3 py-2 my-0 border border-primary d-flex flex-fill" id="jumbotron">
+      <form id="addRss" class="d-flex needs-validation col-4 pl-0" novalidate>
+        <button id="confirm" class="btn btn-outline-primary font-weight-bold" type="submit"
+          disabled>&#43;</button>
+        <div class="pr-2 pl-2 flex-fill position-relative">
+          <div id="linkLoading" class="d-flex justify-content-center position-absolute" style="left: 40%; bottom: 15%;">
+            <strong class="text-info d-none">Loading...</strong>
+            <div class="spinner-border spinner-border-sm ml-3 text-info d-none" role="status" aria-hidden="true">
             </div>
           </div>
-        </form>
-      </div>
-      <div id="mainTitles" class="row m-0 mx-3 p-0 d-none">
-        <div class="col-4 pl-0 pr-1">
-          <div class="border rounded bg-info">
-            <h5 class="title mb-0 py-2 text-center text-light font-weight-bold">Feeds</h5>
+          <input class="form-control" id="urlField" type="text" placeholder="input rss-URL">
+          <div id="wrongInput" class="invalid-tooltip">
+            Error message
           </div>
         </div>
-        <div class="col-8 pr-0 pl-1">
-          <div class="border rounded bg-info">
-            <h5 class="title mb-0 py-2 text-center text-light font-weight-bold">News</h5>
+      </form>
+      <form id="postsSearch" class="d-flex needs-validation col-8 pr-0" novalidate>
+        <div class="pr-2 flex-fill position-relative">
+          <input class="form-control text-center" id="searchField" type="text" placeholder="type headline part" disabled>
+          <div id="wrongInput" class="invalid-tooltip text-center" style="left: 35%; right: 35%;">
+            No matches were found
           </div>
         </div>
-      </div>
+        <button id="makeSearch" class="btn btn-outline-primary font-weight-bold" type="submit"
+          disabled>search in titles</button>
+      </form>
     </div>
-    <div id="content" class="row mt-5 px-3 pt-5 d-none">
-      <div class="col-4">
-        <ul class="list-group mx-0" id="rssFeeds" style="max-height: calc(100vh - 155px); overflow: scroll;
+    <div id="content" class="row px-3 d-none">
+      <div class="col-4 px-2">
+        <h5 class="title border rounded bg-info mb-0 py-2 text-center text-light font-weight-bold">Feeds</h5>
+        <ul class="list-group mx-0 mx-3" id="rssFeeds" style="max-height: calc(100vh - 100px); overflow: scroll;
         overflow-x: hidden;"></ul>
       </div>
-      <div class="col-8 border-left border-info">
-        <ul class="list-group" id="news" style="max-height: calc(100vh - 155px); overflow: scroll;
+      <div class="col-8 px-2 border-left border-info">
+        <h5 class="title border rounded bg-info mb-0 py-2 text-center text-light font-weight-bold">News</h5>
+        <ul class="list-group mx-3" id="news" style="max-height: calc(100vh - 100px); overflow: scroll;
         overflow-x: hidden;"></ul>
-      </div>
-    </div>
-    <div class="jumbotron w-100 px-3 py-2 my-0 border border-primary fixed-bottom">
-      <div class="input-group mb-0">
-        <div class="input-group-prepend">
-          <button class="btn btn-outline-secondary" type="button" id="makeSearch" disabled>search in news headlines</button>
-        </div>
-        <input id="newsSearch" type="text" class="form-control ml-2" placeholder="type headline here" aria-label="Search in published posts" aria-describedby="makeSearch">
       </div>
     </div>
   </div>

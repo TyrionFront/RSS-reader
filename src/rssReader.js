@@ -16,7 +16,7 @@ export default () => {
   });
 
   const appState = {
-    form: {
+    addRss: {
       state: 'onInput',
       urlState: 'empty',
       url: '',
@@ -35,20 +35,21 @@ export default () => {
     search: {
       state: 'onInput',
       inputState: 'empty',
+      text: '',
       selectedIds: new Set(),
     },
   };
 
-  const mainTitles = document.getElementById('mainTitles');
   const content = document.getElementById('content');
   const addRssForm = document.getElementById('addRss');
   const [addLinkBtn, urlInputField] = addRssForm.elements;
+  const { placeholder } = urlInputField;
+  const searchForm = document.getElementById('postsSearch');
+  const [searchInput, searchButton] = searchForm;
   const warningNode = document.getElementById('wrongInput');
   const loadingIndicator = document.getElementById('linkLoading');
   const feedsListTag = document.getElementById('rssFeeds');
   const newsTag = document.getElementById('news');
-  const searchInput = document.getElementById('newsSearch');
-  const searchButton = document.getElementById('makeSearch');
   const feedsBadges = {};
   const feedElements = {};
 
@@ -68,10 +69,9 @@ export default () => {
     appState.feeds.activeFeedId = activeFeedId !== currentId ? currentId : `sameFeed-${currentId}`;
   };
 
-  watch(appState.form, 'urlState', () => {
-    const { urlState } = appState.form;
+  watch(appState.addRss, 'urlState', () => {
+    const { urlState } = appState.addRss;
     const [value, warning] = urlState.split(' ');
-    warningNode.classList.add('d-none');
     urlInputField.className = 'form-control';
     addLinkBtn.disabled = true;
     switch (value) { // eslint-disable-line default-case
@@ -82,33 +82,31 @@ export default () => {
       case 'is-invalid':
         urlInputField.classList.add(value);
         warningNode.innerText = i18next.t([`${warning}`, 'unspecific']);
-        warningNode.classList.remove('d-none');
         break;
     }
   });
 
-  watch(appState.form, 'state', () => {
-    const { state, responseStatus } = appState.form;
+  watch(appState.addRss, 'state', () => {
+    const { state, responseStatus, url } = appState.addRss;
     urlInputField.disabled = false;
-    warningNode.classList.add('d-none');
     addLinkBtn.disabled = true;
-    addLinkBtn.classList.replace('align-self-end', 'align-self-start');
     [...loadingIndicator.children].forEach(({ classList }) => classList.add('d-none'));
     switch (state) { // eslint-disable-line default-case
       case 'processing':
         [...loadingIndicator.children].forEach(({ classList }) => classList.remove('d-none'));
         urlInputField.disabled = true;
+        urlInputField.placeholder = '';
+        urlInputField.value = '';
         urlInputField.className = 'form-control';
-        addLinkBtn.classList.replace('align-self-start', 'align-self-end');
         break;
       case 'processed':
-        urlInputField.value = '';
-        mainTitles.classList.remove('d-none');
         content.classList.remove('d-none');
+        urlInputField.placeholder = placeholder;
+        searchInput.disabled = false;
         break;
       case 'failed':
+        urlInputField.value = url;
         warningNode.innerText = i18next.t([`${responseStatus}`, 'unspecific']);
-        warningNode.classList.remove('d-none');
         break;
     }
   });
@@ -146,7 +144,7 @@ export default () => {
 
   watch(appState.search, 'inputState', () => {
     const { search } = appState;
-    searchInput.className = 'form-control ml-2';
+    searchInput.className = 'form-control text-center';
     searchButton.disabled = true;
     switch (search.inputState) { // eslint-disable-line default-case
       case 'noMatches':
@@ -188,8 +186,15 @@ export default () => {
     processSearch(appState, value);
   });
 
-  searchButton.addEventListener('click', (e) => {
+  searchForm.addEventListener('submit', (e) => {
     e.preventDefault();
-    appState.search.state = 'hasValues';
+    const { search, posts } = appState;
+    const { text, selectedIds } = search;
+    posts.all.forEach(({ postTitle, postId }) => {
+      if (postTitle.toLowerCase().includes(text)) {
+        selectedIds.add(postId);
+      }
+    });
+    search.state = 'hasValues';
   });
 };

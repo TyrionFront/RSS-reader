@@ -22,7 +22,7 @@ export const makeFeedItem = (feeds, feedsListTag, markActive) => {
         <span id="${feedId}-badge" class="badge badge-success badge-pill mb-0">${postsCount}</span>
       </div>
   </div>
-  <p class="flex-fill mb-1" style="word-wrap:break-word">${description}</p>`;
+  <p class="flex-grow mb-1 text-break">${description}</p>`;
   feedsListTag.prepend(newFeedElem);
 };
 
