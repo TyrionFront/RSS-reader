@@ -125,18 +125,12 @@ export const processFormData = (appState) => {
     });
 };
 
-export const processSearch = (appState, value) => {
-  const { search, posts } = appState;
-  search.state = 'onInput';
-  search.inputState = 'typing';
-  search.selectedIds.clear();
-  if (value.length === 0) {
-    search.state = 'empty';
-    search.inputState = 'empty';
+export const processSearch = (coll, value, appState) => {
+  const { search } = appState;
+  const matchedPost = coll.find(({ postTitle }) => postTitle.toLowerCase().includes(value));
+  if (matchedPost) {
+    search.inputState = 'matched';
     return;
   }
-  const matchedPost = !value.includes(' ')
-    ? posts.all.find(({ postTitle }) => postTitle.toLowerCase().includes(value)) : '';
-  search.text = value;
-  search.inputState = matchedPost ? 'matched' : 'noMatches';
+  search.inputState = 'noMatches';
 };

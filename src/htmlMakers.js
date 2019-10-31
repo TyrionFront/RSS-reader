@@ -26,14 +26,14 @@ export const makeFeedItem = (feeds, feedsListTag, markActive) => {
   feedsListTag.prepend(newFeedElem);
 };
 
-const visualize = (postId, selectedIds, predicate) => {
-  if (selectedIds.size > 0) {
-    return predicate && selectedIds.has(postId) ? '' : 'd-none';
+const visualize = (postTitle, searchText, predicate) => {
+  if (searchText.length > 0) {
+    return predicate && postTitle.toLowerCase().includes(searchText) ? '' : 'd-none';
   }
   return predicate ? '' : 'd-none';
 };
 
-export const makePostsList = (freshPosts, activeFeedId, selectedIds) => {
+export const makePostsList = (freshPosts, activeFeedId, searchText) => {
   const descriptionBuffer = document.createElement('div');
   const [currentFeedId, posts] = freshPosts;
   const predicate = !activeFeedId || activeFeedId === 'sameFeed' || activeFeedId === currentFeedId;
@@ -43,7 +43,7 @@ export const makePostsList = (freshPosts, activeFeedId, selectedIds) => {
       postTitle, postUrl, postDescription, postId,
     } = post;
     const newStoryTag = document.createElement('li');
-    const visualization = visualize(postId, selectedIds, predicate);
+    const visualization = visualize(postTitle, searchText, predicate);
 
     newStoryTag.className = `${currentFeedId} list-group-item rounded border mb-1 ${visualization}`;
     newStoryTag.id = postId;
@@ -69,32 +69,14 @@ export const makePostsList = (freshPosts, activeFeedId, selectedIds) => {
   return liColl;
 };
 
-const giveDisplayFns = () => [
-  {
-    check: (feedId, postIds) => (feedId === 'sameFeed' || feedId === '') && !postIds,
-    displayFn: postsColl => postsColl.forEach(({ classList }) => classList.remove('d-none')),
-  },
-  {
-    check: (feedId, postIds) => (feedId === 'sameFeed' || feedId === '') && postIds,
-    displayFn: (postsColl, ids) => postsColl
-      .forEach(({ classList, id }) => (ids.has(id)
-        ? classList.remove('d-none') : classList.add('d-none'))),
-  },
-  {
-    check: (feedId, postIds) => feedId && !postIds,
-    displayFn: (postsColl, ids, activeFeedId) => postsColl.forEach(({ classList }) => (
-      classList.contains(activeFeedId) ? classList.remove('d-none') : classList.add('d-none'))),
-  },
-  {
-    check: (feedId, postIds) => feedId && postIds,
-    displayFn: (postsColl, ids, activeFeedId) => postsColl
-      .forEach(({ classList, id }) => (classList.contains(activeFeedId) && ids.has(id)
-        ? classList.remove('d-none') : classList.add('d-none'))),
-  },
-];
-
-export const displayHidePosts = (activeFeedId, postElements, selectedIds) => {
-  const ids = selectedIds.size > 0 ? selectedIds : '';
-  const { displayFn } = giveDisplayFns().find(({ check }) => check(activeFeedId, ids));
-  displayFn(postElements, selectedIds, activeFeedId);
+export const displayHidePosts = (selectedPosts, allPosts) => {
+  if (selectedPosts.length === allPosts.length) {
+    allPosts.forEach(({ classList }) => classList.remove('d-none'));
+    return;
+  }
+  allPosts.forEach(({ id, classList }) => {
+    const foundPost = selectedPosts.find(({ postId }) => postId === id);
+    const action = foundPost ? 'remove' : 'add';
+    classList[action]('d-none');
+  });
 };

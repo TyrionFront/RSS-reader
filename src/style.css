@@ -1,0 +1,28 @@
+body {
+  background: no-repeat url(../public/img/freshNews.jpg);
+  background-size: cover;
+  background-attachment: fixed;
+  background-position: center;
+  height: 100vh;
+  overflow: hidden;
+}
+
+ul.list-group {
+  max-height: calc(100vh - 100px);
+  overflow: scroll;
+  overflow-x: hidden;
+}
+
+#linkLoading {
+  left: 35%;
+  bottom: 15%;
+}
+
+#rssFeedsList::-webkit-scrollbar {
+  width: 0;
+}
+
+#wrongTitle {
+  left: 35%;
+  right: 35%;
+}

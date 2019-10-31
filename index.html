@@ -3,28 +3,21 @@
 <head>
   <meta charset="utf-8">
   <title>RSS-reader</title>
-  <style>
-    #rssFeeds::-webkit-scrollbar {
-      width: 0;
-    }
-  </style>
 </head>
 
-<body style="background: no-repeat url(./img/freshNews.jpg); background-size: cover;
-  background-attachment: fixed; height: 100vh; overflow: hidden;">
+<body>
   <div class="container-fluid px-0">
     <div class="jumbotron w-100 px-3 py-2 my-0 border border-primary d-flex flex-fill" id="jumbotron">
       <form id="addRss" class="d-flex needs-validation col-4 pl-0" novalidate>
-        <button id="confirm" class="btn btn-outline-primary font-weight-bold" type="submit"
-          disabled>&#43;</button>
+        <button id="confirm" class="btn btn-outline-primary font-weight-bold" type="submit" disabled>&#43;</button>
         <div class="pr-2 pl-2 flex-fill position-relative">
-          <div id="linkLoading" class="d-flex justify-content-center position-absolute" style="left: 40%; bottom: 15%;">
+          <div id="linkLoading" class="d-flex justify-content-center position-absolute">
             <strong class="text-info d-none">Loading...</strong>
-            <div class="spinner-border spinner-border-sm ml-3 text-info d-none" role="status" aria-hidden="true">
+            <div class="spinner-border spinner-border-sm ml-2 align-self-center text-info d-none" role="status" aria-hidden="true">
             </div>
           </div>
           <input class="form-control" id="urlField" type="text" placeholder="input rss-URL">
-          <div id="wrongInput" class="invalid-tooltip">
+          <div id="processingErr" class="invalid-tooltip">
             Error message
           </div>
         </div>
@@ -32,24 +25,25 @@
       <form id="postsSearch" class="d-flex needs-validation col-8 pr-0" novalidate>
         <div class="pr-2 flex-fill position-relative">
           <input class="form-control text-center" id="searchField" type="text" placeholder="type headline part" disabled>
-          <div id="wrongInput" class="invalid-tooltip text-center" style="left: 35%; right: 35%;">
+          <div id="wrongTitle" class="invalid-tooltip text-center">
             No matches were found
           </div>
         </div>
-        <button id="makeSearch" class="btn btn-outline-primary font-weight-bold" type="submit"
-          disabled>search in titles</button>
+        <button id="makeSearch" class="btn btn-outline-primary font-weight-bold" type="submit" disabled>search</button>
       </form>
     </div>
     <div id="content" class="row px-3 d-none">
       <div class="col-4 px-2">
-        <h5 class="title border rounded bg-info mb-0 py-2 text-center text-light font-weight-bold">Feeds</h5>
-        <ul class="list-group mx-0 mx-3" id="rssFeeds" style="max-height: calc(100vh - 100px); overflow: scroll;
-        overflow-x: hidden;"></ul>
+        <h5 class="title border rounded bg-info mb-0 py-2 text-center text-light font-weight-bold">
+          Feeds<span id="feedsBadge" class="badge badge-light ml-3 font-weight-light">0</span>
+        </h5>
+        <ul class="list-group mx-0 mx-3" id="rssFeedsList"></ul>
       </div>
       <div class="col-8 px-2 border-left border-info">
-        <h5 class="title border rounded bg-info mb-0 py-2 text-center text-light font-weight-bold">News</h5>
-        <ul class="list-group mx-3" id="news" style="max-height: calc(100vh - 100px); overflow: scroll;
-        overflow-x: hidden;"></ul>
+        <h5 class="title border rounded bg-info mb-0 py-2 text-center text-light font-weight-bold">
+          Posts<span id="postsBadge" class="badge badge-light ml-3 font-weight-light">0</span>
+        </h5>
+        <ul class="list-group mx-3" id="postsList"></ul>
       </div>
     </div>
   </div>
