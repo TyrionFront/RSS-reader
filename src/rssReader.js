@@ -1,5 +1,6 @@
 import { watch } from 'melanke-watchjs';
 import i18next from 'i18next';
+import $ from 'jquery';
 import resources from '../locales/descriptions';
 import {
   processTypedUrl, processFormData, processSearch,
@@ -65,11 +66,18 @@ export default () => {
 
   const markActiveFeed = ({ currentTarget }) => {
     const { activeFeedId } = appState.feeds;
-    const { posts } = appState;
+    const { posts, search } = appState;
     const currentId = currentTarget.id;
     const renewedId = activeFeedId !== currentId ? currentId : `sameFeed-${currentId}`;
-    posts.selected = renewedId.includes('sameFeed') ? posts.all : posts.all.filter(({ postId }) => postId.includes(currentId));
+    const coll = renewedId.includes('sameFeed') ? [] : posts.all.filter(({ postId }) => postId.includes(currentId));
+    posts.selected = coll;
     appState.feeds.activeFeedId = renewedId;
+    if (search.text) {
+      const coll2 = coll.length > 0 ? coll : posts.all;
+      search.state = 'onInput';
+      search.inputState = 'typing';
+      processSearch(coll2, search.text, appState);
+    }
   };
 
   watch(appState.addRss, 'urlState', () => {
@@ -138,7 +146,7 @@ export default () => {
       postsCountTag.innerText = postsCount;
       return;
     }
-    if (!activeFeedId) {
+    if (!activeFeedId || activeFeedId === 'sameFeed') {
       postsCountTag.innerText = all.length;
     }
   });
@@ -159,25 +167,34 @@ export default () => {
   });
 
   watch(appState.posts, 'selected', () => {
-    const { selected } = appState.posts;
+    const { selected, all } = appState.posts;
     const publishedPosts = [...postsListTag.children];
-    displayHidePosts(selected, publishedPosts);
-    postsCountTag.innerText = selected.length;
+    const coll = selected.length > 0 ? selected : all;
+    displayHidePosts(coll, publishedPosts);
+    postsCountTag.innerText = coll.length;
   });
 
   watch(appState.search, 'inputState', () => {
     const { inputState } = appState.search;
     searchInput.className = 'form-control text-center';
     searchButton.disabled = true;
+    $(searchButton).popover('dispose');
     // eslint-disable-next-line default-case
     switch (inputState) {
       case 'matched':
         searchInput.classList.add('is-valid');
         searchButton.disabled = false;
+        $(searchButton).popover('show');
         break;
       case 'noMatches':
         searchInput.classList.add('is-invalid');
         break;
+    }
+  });
+
+  watch(appState.search, 'state', () => {
+    if (appState.search.state === 'hasValues') {
+      $(searchButton).popover('dispose');
     }
   });
 
@@ -194,18 +211,22 @@ export default () => {
   searchInput.addEventListener('input', ({ target }) => {
     const { value } = target;
     const { search, posts } = appState;
+    const { selected, all } = posts;
     search.state = 'onInput';
     search.inputState = 'typing';
     search.text = '';
     if (value.length === 0) {
       search.state = 'empty';
       search.inputState = 'empty';
+      const [activeFeedId] = appState.feeds.activeFeedId.split('-');
+      posts.selected = !activeFeedId || activeFeedId === 'sameFeed'
+        ? all : all.filter(({ postId }) => postId.includes(activeFeedId));
       return;
     }
     const str = !value.includes(' ') ? value.toLowerCase() : '';
     if (str) {
       search.text = value;
-      const coll = posts.selected.length > 0 ? posts.selected : posts.all;
+      const coll = selected.length > 0 ? selected : all;
       processSearch(coll, str, appState);
     }
   });
