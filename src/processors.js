@@ -140,3 +140,19 @@ export const processSearch = (coll, value, appState) => {
   }
   search.inputState = 'noMatches';
 };
+
+export const changeFeed = (currentFeedId, appState) => {
+  const { posts, search, feeds } = appState;
+  const { activeFeedId } = feeds;
+  const renewedId = activeFeedId !== currentFeedId ? currentFeedId : `sameFeed-${currentFeedId}`;
+  const coll = renewedId.includes('sameFeed') ? [] : posts.all.filter(({ postId }) => postId.includes(currentFeedId));
+  posts.selected = coll;
+  feeds.activeFeedId = renewedId;
+  if (search.text) {
+    const coll2 = coll.length > 0 ? coll : posts.all;
+    search.state = 'onInput';
+    search.inputState = 'typing';
+    search.basicColl = coll2;
+    processSearch(coll2, search.text, appState);
+  }
+};

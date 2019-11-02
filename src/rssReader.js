@@ -3,7 +3,7 @@ import i18next from 'i18next';
 import $ from 'jquery';
 import resources from '../locales/descriptions';
 import {
-  processTypedUrl, processFormData, processSearch,
+  processTypedUrl, processFormData, processSearch, changeFeed,
 } from './processors';
 import { makePostsList, makeFeedItem, displayHidePosts } from './htmlMakers';
 
@@ -60,23 +60,6 @@ export default () => {
     return htmlTag;
   };
 
-  const markActiveFeed = ({ currentTarget }) => {
-    const { posts, search, feeds } = appState;
-    const { activeFeedId } = feeds;
-    const currentId = currentTarget.id;
-    const renewedId = activeFeedId !== currentId ? currentId : `sameFeed-${currentId}`;
-    const coll = renewedId.includes('sameFeed') ? [] : posts.all.filter(({ postId }) => postId.includes(currentId));
-    posts.selected = coll;
-    appState.feeds.activeFeedId = renewedId;
-    if (search.text) {
-      const coll2 = coll.length > 0 ? coll : posts.all;
-      search.state = 'onInput';
-      search.inputState = 'typing';
-      search.basicColl = coll2;
-      processSearch(coll2, search.text, appState);
-    }
-  };
-
   watch(appState.addRss, 'urlState', () => {
     const { urlState } = appState.addRss;
     const [value, warning] = urlState.split(' ');
@@ -121,10 +104,15 @@ export default () => {
     }
   });
 
+  const markActive = ({ currentTarget }) => {
+    const currentId = currentTarget.id;
+    changeFeed(currentId, appState);
+  };
   const feedsCountTag = document.getElementById('feedsBadge');
+
   watch(appState.feeds, 'list', () => {
     const { list } = appState.feeds;
-    makeFeedItem(appState.feeds.list, feedsListTag, markActiveFeed);
+    makeFeedItem(appState.feeds.list, feedsListTag, markActive);
     feedsCountTag.innerText = list.length;
   }, 1);
 
@@ -181,8 +169,7 @@ export default () => {
     searchInput.className = 'form-control text-center';
     searchButton.disabled = true;
     $(searchButton).popover('dispose');
-    // eslint-disable-next-line default-case
-    switch (inputState) {
+    switch (inputState) { // eslint-disable-line default-case
       case 'matched':
         searchInput.classList.add('is-valid');
         searchButton.disabled = false;
