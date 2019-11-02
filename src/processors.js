@@ -65,8 +65,9 @@ const processPosts = (itemsList, currentFeedId, posts, feeds) => {
   const newPostsWithId = newPosts.map((post) => {
     currentFeed.postsCount += 1;
     const postId = `${currentFeedId}-post${currentFeed.postsCount}`;
-    all.push({ ...post, postId });
-    return { ...post, postId };
+    const postWithId = { ...post, postId };
+    all.push(postWithId);
+    return postWithId;
   });
   return [currentFeedId, newPostsWithId];
 };
@@ -86,6 +87,20 @@ const refreshFeeds = ([currentFeed, ...restFeeds], appState) => {
     });
 };
 
+const startRefreshFeeds = (appState) => {
+  const { feeds } = appState;
+  if (feeds.state === 'not-updating') {
+    feeds.state = 'updating';
+    const refresh = () => {
+      feeds.timerId = setTimeout(() => {
+        refreshFeeds(appState.feeds.list, appState);
+        feeds.timerId = setTimeout(refresh, 30000);
+      }, 30000);
+    };
+    refresh();
+  }
+};
+
 export const processFormData = (appState) => {
   const { addRss, feeds, posts } = appState;
   addRss.state = 'processing';
@@ -101,16 +116,7 @@ export const processFormData = (appState) => {
       feeds.list.push(newFeed);
       posts.fresh = processPosts(itemsList, newFeed.feedId, posts, feeds.list);
 
-      if (feeds.state === 'not-updating') {
-        feeds.state = 'updating';
-        const refresh = () => {
-          feeds.timerId = setTimeout(() => {
-            refreshFeeds(appState.feeds.list, appState);
-            feeds.timerId = setTimeout(refresh, 30000);
-          }, 30000);
-        };
-        refresh();
-      }
+      startRefreshFeeds(appState);
     })
     .catch((err) => {
       addRss.urlState = 'is-invalid';

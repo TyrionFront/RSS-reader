@@ -37,22 +37,18 @@ export default () => {
       state: 'onInput',
       inputState: 'empty',
       text: '',
+      basicColl: [],
     },
   };
 
   const content = document.getElementById('content');
   const addRssForm = document.getElementById('addRss');
   const [addLinkBtn, urlInputField] = addRssForm.elements;
-  const { placeholder } = urlInputField;
   const searchForm = document.getElementById('postsSearch');
   const [searchInput, searchButton] = searchForm;
   const warningNode = document.getElementById('processingErr');
-  const loadingIndicator = document.getElementById('linkLoading');
   const feedsListTag = document.getElementById('rssFeedsList');
   const postsListTag = document.getElementById('postsList');
-  const feedsCountTag = document.getElementById('feedsBadge');
-  const postsCountTag = document.getElementById('postsBadge');
-  const feedsBadges = {};
 
   const getElement = (coll, ...ids) => {
     const tagId = ids.length > 1 ? `${ids.join('-')}` : ids;
@@ -65,8 +61,8 @@ export default () => {
   };
 
   const markActiveFeed = ({ currentTarget }) => {
-    const { activeFeedId } = appState.feeds;
-    const { posts, search } = appState;
+    const { posts, search, feeds } = appState;
+    const { activeFeedId } = feeds;
     const currentId = currentTarget.id;
     const renewedId = activeFeedId !== currentId ? currentId : `sameFeed-${currentId}`;
     const coll = renewedId.includes('sameFeed') ? [] : posts.all.filter(({ postId }) => postId.includes(currentId));
@@ -76,6 +72,7 @@ export default () => {
       const coll2 = coll.length > 0 ? coll : posts.all;
       search.state = 'onInput';
       search.inputState = 'typing';
+      search.basicColl = coll2;
       processSearch(coll2, search.text, appState);
     }
   };
@@ -97,6 +94,8 @@ export default () => {
     }
   });
 
+  const { placeholder } = urlInputField;
+  const loadingIndicator = document.getElementById('linkLoading');
   watch(appState.addRss, 'state', () => {
     const { state, responseStatus, url } = appState.addRss;
     urlInputField.disabled = false;
@@ -122,12 +121,30 @@ export default () => {
     }
   });
 
+  const feedsCountTag = document.getElementById('feedsBadge');
   watch(appState.feeds, 'list', () => {
     const { list } = appState.feeds;
     makeFeedItem(appState.feeds.list, feedsListTag, markActiveFeed);
     feedsCountTag.innerText = list.length;
   }, 1);
 
+  watch(appState.feeds, 'activeFeedId', () => {
+    const feedElements = [...feedsListTag.children];
+    const { activeFeedId } = appState.feeds;
+    const [activeIdValue, sameId] = activeFeedId.split('-');
+    if (activeIdValue === 'sameFeed') {
+      const currentFeedElem = feedElements.find(({ id }) => id === sameId);
+      currentFeedElem.classList.toggle('active');
+      return;
+    }
+    const currentFeed = feedElements.find(({ id }) => id === activeIdValue);
+    const prevActiveFeed = feedElements.find(({ classList }) => classList.contains('active'));
+    const feedsPair = prevActiveFeed ? [currentFeed, prevActiveFeed] : [currentFeed];
+    feedsPair.forEach(({ classList }) => classList.toggle('active'));
+  });
+
+  const postsCountTag = document.getElementById('postsBadge');
+  const feedsBadges = {};
   watch(appState.posts, 'fresh', () => {
     const { fresh, all } = appState.posts;
     const { list } = appState.feeds;
@@ -149,21 +166,6 @@ export default () => {
     if (!activeFeedId || activeFeedId === 'sameFeed') {
       postsCountTag.innerText = all.length;
     }
-  });
-
-  watch(appState.feeds, 'activeFeedId', () => {
-    const feedElements = [...feedsListTag.children];
-    const { activeFeedId } = appState.feeds;
-    const [activeIdValue, sameId] = activeFeedId.split('-');
-    if (activeIdValue === 'sameFeed') {
-      const currentFeedElem = feedElements.find(({ id }) => id === sameId);
-      currentFeedElem.classList.toggle('active');
-      return;
-    }
-    const currentFeed = feedElements.find(({ id }) => id === activeIdValue);
-    const prevActiveFeed = feedElements.find(({ classList }) => classList.contains('active'));
-    const feedsPair = prevActiveFeed ? [currentFeed, prevActiveFeed] : [currentFeed];
-    feedsPair.forEach(({ classList }) => classList.toggle('active'));
   });
 
   watch(appState.posts, 'selected', () => {
@@ -194,6 +196,7 @@ export default () => {
 
   watch(appState.search, 'state', () => {
     if (appState.search.state === 'hasValues') {
+      searchButton.disabled = true;
       $(searchButton).popover('dispose');
     }
   });
@@ -211,22 +214,23 @@ export default () => {
   searchInput.addEventListener('input', ({ target }) => {
     const { value } = target;
     const { search, posts } = appState;
-    const { selected, all } = posts;
+    const { all } = posts;
+    const [activeFeedId] = appState.feeds.activeFeedId.split('-');
+    const coll = !activeFeedId || activeFeedId === 'sameFeed'
+      ? all : all.filter(({ postId }) => postId.includes(activeFeedId));
     search.state = 'onInput';
     search.inputState = 'typing';
     search.text = '';
     if (value.length === 0) {
       search.state = 'empty';
       search.inputState = 'empty';
-      const [activeFeedId] = appState.feeds.activeFeedId.split('-');
-      posts.selected = !activeFeedId || activeFeedId === 'sameFeed'
-        ? all : all.filter(({ postId }) => postId.includes(activeFeedId));
+      posts.selected = coll;
       return;
     }
     const str = !value.includes(' ') ? value.toLowerCase() : '';
     if (str) {
       search.text = value;
-      const coll = selected.length > 0 ? selected : all;
+      search.basicColl = coll;
       processSearch(coll, str, appState);
     }
   });
@@ -234,9 +238,7 @@ export default () => {
   searchForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const { search } = appState;
-    const { selected, all } = appState.posts;
-    const coll = selected.length > 0 ? selected : all;
-    const foundPosts = coll
+    const foundPosts = search.basicColl
       .filter(({ postTitle }) => postTitle.toLowerCase().includes(search.text));
     search.state = 'hasValues';
     appState.posts.selected = foundPosts;
