@@ -69,14 +69,35 @@ export const makePostsList = (freshPosts, activeFeedId, searchText) => {
   return liColl;
 };
 
-export const displayHidePosts = (selectedPosts, allPosts) => {
+export const displayHidePosts = (selectedPosts, allPosts, searchText) => {
   if (selectedPosts.length === allPosts.length) {
-    allPosts.forEach(({ classList }) => classList.remove('d-none'));
+    allPosts.forEach((post) => {
+      const title = post.querySelector('a');
+      title.innerHTML = title.innerText;
+      post.classList.remove('d-none');
+    });
     return;
   }
-  allPosts.forEach(({ id, classList }) => {
-    const foundPost = selectedPosts.find(({ postId }) => postId === id);
-    const action = foundPost ? 'remove' : 'add';
-    classList[action]('d-none');
+  allPosts.forEach((post) => {
+    const foundPost = selectedPosts.find(({ postId }) => postId === post.id);
+    const { classList } = post;
+    if (!foundPost) {
+      classList.add('d-none');
+      return;
+    }
+    const title = post.querySelector('a');
+    if (!searchText) {
+      title.innerHTML = title.innerText;
+      classList.remove('d-none');
+      return;
+    }
+    const { postTitle } = foundPost;
+    const pos = postTitle.toLowerCase().indexOf(searchText);
+    const titlePart = postTitle.slice(pos, pos + searchText.length);
+    const highlightedStr = `<span class="bg-primary text-light">${titlePart}</span>`;
+    const basicStrArr = postTitle.split('');
+    basicStrArr.splice(pos, searchText.length, highlightedStr);
+    title.innerHTML = basicStrArr.join('');
+    classList.remove('d-none');
   });
 };

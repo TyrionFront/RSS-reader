@@ -50,16 +50,6 @@ export default () => {
   const feedsListTag = document.getElementById('rssFeedsList');
   const postsListTag = document.getElementById('postsList');
 
-  const getElement = (coll, ...ids) => {
-    const tagId = ids.length > 1 ? `${ids.join('-')}` : ids;
-    let htmlTag = coll[tagId];
-    if (!htmlTag) {
-      htmlTag = document.getElementById(tagId);
-      coll[tagId] = htmlTag; // eslint-disable-line no-param-reassign
-    }
-    return htmlTag;
-  };
-
   watch(appState.addRss, 'urlState', () => {
     const { urlState } = appState.addRss;
     const [value, warning] = urlState.split(' ');
@@ -131,8 +121,18 @@ export default () => {
     feedsPair.forEach(({ classList }) => classList.toggle('active'));
   });
 
+  const getElement = (coll, ...ids) => {
+    const tagId = ids.length > 1 ? `${ids.join('-')}` : ids;
+    let htmlTag = coll[tagId];
+    if (!htmlTag) {
+      htmlTag = document.getElementById(tagId);
+      coll[tagId] = htmlTag; // eslint-disable-line no-param-reassign
+    }
+    return htmlTag;
+  };
   const postsCountTag = document.getElementById('postsBadge');
   const feedsBadges = {};
+
   watch(appState.posts, 'fresh', () => {
     const { fresh, all } = appState.posts;
     const { list } = appState.feeds;
@@ -160,7 +160,9 @@ export default () => {
     const { selected, all } = appState.posts;
     const publishedPosts = [...postsListTag.children];
     const coll = selected.length > 0 ? selected : all;
-    displayHidePosts(coll, publishedPosts);
+    const { search } = appState;
+    const searchText = search.state === 'hasValues' ? search.text : '';
+    displayHidePosts(coll, publishedPosts, searchText);
     postsCountTag.innerText = coll.length;
   });
 
@@ -224,10 +226,10 @@ export default () => {
 
   searchForm.addEventListener('submit', (e) => {
     e.preventDefault();
-    const { search } = appState;
+    const { search, posts } = appState;
     const foundPosts = search.basicColl
       .filter(({ postTitle }) => postTitle.toLowerCase().includes(search.text));
     search.state = 'hasValues';
-    appState.posts.selected = foundPosts;
+    posts.selected = foundPosts;
   });
 };
