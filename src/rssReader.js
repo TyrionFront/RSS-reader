@@ -144,7 +144,7 @@ export default () => {
     const postsList = makePostsList(fresh, activeFeedId, text);
     postsListTag.prepend(...postsList);
     currentFeedBadge.innerText = postsCount;
-    if (state === 'hasValues') {
+    if (state === 'hasValues' || state === 'onSearch') {
       return;
     }
     if (activeFeedId === currentFeedId) {
@@ -162,7 +162,7 @@ export default () => {
     const coll = selected.length > 0 ? selected : all;
     const { search } = appState;
     const searchText = search.state === 'hasValues' ? search.text : '';
-    displayHidePosts(coll, publishedPosts, searchText);
+    displayHidePosts([...coll], publishedPosts, searchText);
     postsCountTag.innerText = coll.length;
   });
 
@@ -216,8 +216,9 @@ export default () => {
       posts.selected = coll;
       return;
     }
-    const str = !value.includes(' ') ? value.toLowerCase() : '';
+    const str = value.trim().length > 0 ? value.toLowerCase() : '';
     if (str) {
+      search.state = 'onSearch';
       search.text = value;
       search.basicColl = coll;
       processSearch(coll, str, appState);
