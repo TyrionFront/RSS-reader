@@ -1,6 +1,6 @@
 {
   "name": "rss_reader",
-  "version": "3.6.0",
+  "version": "3.7.0",
   "description": "",
   "main": "index.js",
   "files": [
@@ -30,7 +30,7 @@
     "acorn": "^6.3.0",
     "babel-eslint": "^10.0.3",
     "babel-loader": "^8.0.6",
-    "copy-webpack-plugin": "^5.0.4",
+    "copy-webpack-plugin": "^5.1.1",
     "css-loader": "^3.2.0",
     "eslint": "^5.16.0",
     "eslint-config-airbnb-base": "^13.2.0",

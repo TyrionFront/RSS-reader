@@ -94,8 +94,8 @@ const startRefreshFeeds = (appState) => {
     const refresh = () => {
       feeds.timerId = setTimeout(() => {
         refreshFeeds(appState.feeds.list, appState);
-        feeds.timerId = setTimeout(refresh, 30000);
-      }, 30000);
+        feeds.timerId = setTimeout(refresh, 180000);
+      }, 180000);
     };
     refresh();
   }

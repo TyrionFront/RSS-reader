@@ -1,12 +1,3 @@
-const getPureDescription = (bufferTag, content) => {
-  bufferTag.innerHTML = content; // eslint-disable-line no-param-reassign
-  const tags = [...bufferTag.children].filter(tag => tag.tagName === 'DIV' || tag.id);
-  if (tags) {
-    tags.forEach(tag => bufferTag.removeChild(tag));
-  }
-  return bufferTag.textContent;
-};
-
 export const makeFeedItem = (feeds, feedsListTag, markActive) => {
   const { length } = feeds;
   const {
@@ -34,7 +25,6 @@ const visualize = (postTitle, searchText, predicate) => {
 };
 
 export const makePostsList = (freshPosts, activeFeedId, searchText) => {
-  const descriptionBuffer = document.createElement('div');
   const [currentFeedId, posts] = freshPosts;
   const predicate = !activeFeedId || activeFeedId === 'sameFeed' || activeFeedId === currentFeedId;
   let liColl = [];
@@ -60,7 +50,7 @@ export const makePostsList = (freshPosts, activeFeedId, searchText) => {
                 <span aria-hidden="true">&times;</span>
               </button>
             </div>
-            <div class="modal-body">${getPureDescription(descriptionBuffer, postDescription)}</div>
+            <div class="modal-body">${postDescription}</div>
           </div>
         </div>
       </div>`;
