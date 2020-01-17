@@ -1,6 +1,5 @@
 import { watch } from 'melanke-watchjs';
 import i18next from 'i18next';
-import $ from 'jquery';
 import resources from '../locales/descriptions';
 import {
   processTypedUrl, processFormData, processSearch, changeFeed,
