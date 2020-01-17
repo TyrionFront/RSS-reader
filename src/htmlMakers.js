@@ -17,14 +17,14 @@ export const makeFeedItem = (feeds, feedsListTag, markActive) => {
   feedsListTag.prepend(newFeedElem);
 };
 
-const visualize = (postTitle, searchText, predicate) => {
-  if (searchText.length > 0) {
-    return predicate && postTitle.toLowerCase().includes(searchText) ? '' : 'd-none';
+const visualize = (inputState, predicate) => {
+  if (inputState === 'matched') {
+    return 'd-none';
   }
   return predicate ? '' : 'd-none';
 };
 
-export const makePostsList = (freshPosts, activeFeedId, searchText) => {
+export const makePostsList = (freshPosts, activeFeedId, inputState) => {
   const [currentFeedId, posts] = freshPosts;
   const predicate = !activeFeedId || activeFeedId === 'sameFeed' || activeFeedId === currentFeedId;
   let liColl = [];
@@ -33,7 +33,7 @@ export const makePostsList = (freshPosts, activeFeedId, searchText) => {
       postTitle, postUrl, postDescription, postId,
     } = post;
     const newStoryTag = document.createElement('li');
-    const visualization = visualize(postTitle, searchText, predicate);
+    const visualization = visualize(inputState, predicate);
 
     newStoryTag.className = `${currentFeedId} list-group-item rounded border mb-1 ${visualization}`;
     newStoryTag.id = postId;

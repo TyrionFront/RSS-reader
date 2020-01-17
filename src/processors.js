@@ -94,8 +94,8 @@ const startRefreshFeeds = (appState) => {
     const refresh = () => {
       feeds.timerId = setTimeout(() => {
         refreshFeeds(appState.feeds.list, appState);
-        feeds.timerId = setTimeout(refresh, 180000);
-      }, 180000);
+        feeds.timerId = setTimeout(refresh, 30000);
+      }, 30000);
     };
     refresh();
   }
@@ -131,11 +131,12 @@ export const processFormData = (appState) => {
     });
 };
 
-export const processSearch = (coll, value, appState) => {
-  const { search } = appState;
-  const matchedPost = coll.find(({ postTitle }) => postTitle.toLowerCase().includes(value));
-  if (matchedPost) {
+export const processSearch = (coll, text, appState) => {
+  const { search, posts } = appState;
+  const matchedPosts = coll.filter(({ postTitle }) => postTitle.toLowerCase().includes(text));
+  if (matchedPosts.length > 0) {
     search.inputState = 'matched';
+    posts.selected = matchedPosts;
     return;
   }
   search.inputState = 'noMatches';
@@ -150,9 +151,7 @@ export const changeFeed = (currentFeedId, appState) => {
   feeds.activeFeedId = renewedId;
   if (search.text) {
     const coll2 = coll.length > 0 ? coll : posts.all;
-    search.state = 'onInput';
     search.inputState = 'typing';
-    search.basicColl = coll2;
     processSearch(coll2, search.text, appState);
   }
 };

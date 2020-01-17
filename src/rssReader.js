@@ -34,18 +34,15 @@ export default () => {
       selected: [],
     },
     search: {
-      state: 'onInput',
       inputState: 'empty',
       text: '',
-      basicColl: [],
     },
   };
 
   const content = document.getElementById('content');
   const addRssForm = document.getElementById('addRss');
   const [addLinkBtn, urlInputField] = addRssForm.elements;
-  const searchForm = document.getElementById('postsSearch');
-  const [searchInput, searchButton] = searchForm;
+  const searchInput = document.getElementById('searchField');
   const warningNode = document.getElementById('processingErr');
   const feedsListTag = document.getElementById('rssFeedsList');
   const postsListTag = document.getElementById('postsList');
@@ -140,11 +137,11 @@ export default () => {
     const [currentFeedId] = fresh;
     const { postsCount } = list.find(({ feedId }) => feedId === currentFeedId);
     const currentFeedBadge = getElement(feedsBadges, currentFeedId, 'badge');
-    const { text, state } = appState.search;
-    const postsList = makePostsList(fresh, activeFeedId, text);
+    const { inputState } = appState.search;
+    const postsList = makePostsList(fresh, activeFeedId, inputState);
     postsListTag.prepend(...postsList);
     currentFeedBadge.innerText = postsCount;
-    if (state === 'hasValues' || state === 'onSearch') {
+    if (inputState === 'matched') {
       return;
     }
     if (activeFeedId === currentFeedId) {
@@ -161,7 +158,7 @@ export default () => {
     const publishedPosts = [...postsListTag.children];
     const coll = selected.length > 0 ? selected : all;
     const { search } = appState;
-    const searchText = search.state === 'hasValues' ? search.text : '';
+    const searchText = search.inputState === 'matched' ? search.text : '';
     displayHidePosts([...coll], publishedPosts, searchText);
     postsCountTag.innerText = coll.length;
   });
@@ -169,24 +166,13 @@ export default () => {
   watch(appState.search, 'inputState', () => {
     const { inputState } = appState.search;
     searchInput.className = 'form-control text-center';
-    searchButton.disabled = true;
-    $(searchButton).popover('dispose');
     switch (inputState) { // eslint-disable-line default-case
       case 'matched':
         searchInput.classList.add('is-valid');
-        searchButton.disabled = false;
-        $(searchButton).popover('show');
         break;
       case 'noMatches':
         searchInput.classList.add('is-invalid');
         break;
-    }
-  });
-
-  watch(appState.search, 'state', () => {
-    if (appState.search.state === 'hasValues') {
-      searchButton.disabled = true;
-      $(searchButton).popover('dispose');
     }
   });
 
@@ -207,30 +193,18 @@ export default () => {
     const [activeFeedId] = appState.feeds.activeFeedId.split('-');
     const coll = !activeFeedId || activeFeedId === 'sameFeed'
       ? all : all.filter(({ postId }) => postId.includes(activeFeedId));
-    search.state = 'onInput';
     search.inputState = 'typing';
     search.text = '';
     if (value.length === 0) {
-      search.state = 'empty';
       search.inputState = 'empty';
       posts.selected = coll;
       return;
     }
     const str = value.trim().length > 0 ? value.toLowerCase() : '';
     if (str) {
-      search.state = 'onSearch';
-      search.text = value;
-      search.basicColl = coll;
+      search.inputState = 'onSearch';
+      search.text = str;
       processSearch(coll, str, appState);
     }
-  });
-
-  searchForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const { search, posts } = appState;
-    const foundPosts = search.basicColl
-      .filter(({ postTitle }) => postTitle.toLowerCase().includes(search.text));
-    search.state = 'hasValues';
-    posts.selected = foundPosts;
   });
 };
