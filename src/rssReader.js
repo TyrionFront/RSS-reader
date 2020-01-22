@@ -2,7 +2,7 @@ import { watch } from 'melanke-watchjs';
 import i18next from 'i18next';
 import resources from '../locales/descriptions';
 import {
-  processTypedUrl, processFormData, processSearch, changeFeed,
+  processTypedUrl, processFormData, makeSelection, changeFeed,
 } from './processors';
 import { makePostsList, makeFeedItem, displayHidePosts } from './htmlMakers';
 
@@ -153,13 +153,12 @@ export default () => {
   });
 
   watch(appState.posts, 'selected', () => {
-    const { selected, all } = appState.posts;
+    const { selected } = appState.posts;
     const publishedPosts = [...postsListTag.children];
-    const coll = selected.length > 0 ? selected : all;
     const { search } = appState;
     const searchText = search.inputState === 'matched' ? search.text : '';
-    displayHidePosts([...coll], publishedPosts, searchText);
-    postsCountTag.innerText = coll.length;
+    displayHidePosts(selected, publishedPosts, searchText);
+    postsCountTag.innerText = selected.length;
   });
 
   watch(appState.search, 'inputState', () => {
@@ -186,24 +185,14 @@ export default () => {
   });
 
   searchInput.addEventListener('input', ({ target }) => {
-    const { value } = target;
-    const { search, posts } = appState;
-    const { all } = posts;
-    const [activeFeedId] = appState.feeds.activeFeedId.split('-');
-    const coll = !activeFeedId || activeFeedId === 'sameFeed'
-      ? all : all.filter(({ postId }) => postId.includes(activeFeedId));
+    const { search, posts, feeds } = appState;
     search.inputState = 'typing';
-    search.text = '';
-    if (value.length === 0) {
-      search.inputState = 'empty';
-      posts.selected = coll;
-      return;
-    }
+    const { value } = target;
     const str = value.trim().length > 0 ? value.toLowerCase() : '';
-    if (str) {
-      search.inputState = 'onSearch';
-      search.text = str;
-      processSearch(coll, str, appState);
-    }
+    search.text = str;
+
+    const [matchedPosts, searchState] = makeSelection(str, feeds.activeFeedId, posts.all);
+    posts.selected = matchedPosts;
+    search.inputState = searchState;
   });
 };

@@ -131,27 +131,25 @@ export const processFormData = (appState) => {
     });
 };
 
-export const processSearch = (coll, text, appState) => {
-  const { search, posts } = appState;
-  const matchedPosts = coll.filter(({ postTitle }) => postTitle.toLowerCase().includes(text));
-  if (matchedPosts.length > 0) {
-    search.inputState = 'matched';
-    posts.selected = matchedPosts;
-    return;
+export const makeSelection = (text, activeFeedId, posts) => {
+  const [idValue] = activeFeedId.split('-');
+  const coll = !idValue || idValue === 'sameFeed'
+    ? posts : posts.filter(({ postId }) => postId.includes(idValue));
+  if (!text) {
+    return [coll];
   }
-  search.inputState = 'noMatches';
+  const matchedPosts = coll.filter(({ postTitle }) => postTitle.toLowerCase().includes(text));
+  return matchedPosts.length > 0 ? [matchedPosts, 'matched'] : [coll, 'noMatches'];
 };
 
 export const changeFeed = (currentFeedId, appState) => {
   const { posts, search, feeds } = appState;
   const { activeFeedId } = feeds;
+
   const renewedId = activeFeedId !== currentFeedId ? currentFeedId : `sameFeed-${currentFeedId}`;
-  const coll = renewedId.includes('sameFeed') ? [] : posts.all.filter(({ postId }) => postId.includes(currentFeedId));
-  posts.selected = coll;
+  const [matchedPosts, searchState] = makeSelection(search.text, renewedId, posts.all);
+
   feeds.activeFeedId = renewedId;
-  if (search.text) {
-    const coll2 = coll.length > 0 ? coll : posts.all;
-    search.inputState = 'typing';
-    processSearch(coll2, search.text, appState);
-  }
+  posts.selected = matchedPosts;
+  search.inputState = searchState;
 };
