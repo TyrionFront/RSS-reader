@@ -1,8 +1,9 @@
 import { watch } from 'melanke-watchjs';
 import i18next from 'i18next';
+import $ from 'jquery';
 import resources from '../locales/descriptions';
 import {
-  processTypedUrl, processFormData, makeSelection, changeFeed,
+  processTypedUrl, processFormData, makeSelection, changeFeed, removeData,
 } from './processors';
 import { makePostsList, makeFeedItem, displayHidePosts } from './htmlMakers';
 
@@ -15,6 +16,7 @@ export default () => {
   });
 
   const appState = {
+    dataState: 'waiting',
     addRss: {
       state: 'onInput',
       urlState: 'empty',
@@ -40,21 +42,26 @@ export default () => {
 
   const content = document.getElementById('content');
   const addRssForm = document.getElementById('addRss');
-  const [addLinkBtn, urlInputField] = addRssForm.elements;
+  const [removeFeedBtn, addFeedBtn, urlInputField] = addRssForm.elements;
+  const removingDataModal = document.getElementById('removingDataModal');
+  const confirmRemovingBtn = document.getElementById('dataRemoving');
   const searchInput = document.getElementById('searchField');
   const warningNode = document.getElementById('processingErr');
   const feedsListTag = document.getElementById('rssFeedsList');
   const postsListTag = document.getElementById('postsList');
+  const feedsBadges = {};
 
   watch(appState.addRss, 'urlState', () => {
     const { urlState } = appState.addRss;
     const [value, warning] = urlState.split(' ');
     urlInputField.className = 'form-control';
-    addLinkBtn.disabled = true;
+    addFeedBtn.disabled = true;
+    addFeedBtn.classList.replace('btn-primary', 'btn-outline-primary');
     switch (value) { // eslint-disable-line default-case
       case 'is-valid':
         urlInputField.classList.add(value);
-        addLinkBtn.disabled = false;
+        addFeedBtn.classList.replace('btn-outline-primary', 'btn-primary');
+        addFeedBtn.disabled = false;
         break;
       case 'is-invalid':
         urlInputField.classList.add(value);
@@ -68,7 +75,7 @@ export default () => {
   watch(appState.addRss, 'state', () => {
     const { state, responseStatus, url } = appState.addRss;
     urlInputField.disabled = false;
-    addLinkBtn.disabled = true;
+    addFeedBtn.disabled = true;
     [...loadingIndicator.children].forEach(({ classList }) => classList.add('d-none'));
     switch (state) { // eslint-disable-line default-case
       case 'processing':
@@ -77,6 +84,7 @@ export default () => {
         urlInputField.placeholder = '';
         urlInputField.value = '';
         urlInputField.className = 'form-control';
+        addFeedBtn.classList.replace('btn-primary', 'btn-outline-primary');
         break;
       case 'processed':
         content.classList.remove('d-none');
@@ -97,28 +105,37 @@ export default () => {
   const feedsCountTag = document.getElementById('feedsBadge');
 
   watch(appState.feeds, 'list', () => {
-    const { list } = appState.feeds;
-    makeFeedItem(appState.feeds.list, feedsListTag, markActive);
-    feedsCountTag.innerText = list.length;
+    const { dataState, feeds } = appState;
+    feedsCountTag.innerText = feeds.list.length;
+    if (dataState === 'removing') {
+      const feedToRemove = document.getElementById(feeds.activeFeedId);
+      const countTagIdToRemove = `${feeds.activeFeedId}-badge`;
+      delete feedsBadges[countTagIdToRemove];
+      feedsListTag.removeChild(feedToRemove);
+      return;
+    }
+    makeFeedItem(feeds.list, feedsListTag, markActive);
   }, 1);
 
   watch(appState.feeds, 'activeFeedId', () => {
+    removeFeedBtn.disabled = true;
+    removeFeedBtn.classList.replace('btn-warning', 'btn-outline-warning');
     const feedElements = [...feedsListTag.children];
+    const prevActiveFeed = feedElements.find(({ classList }) => classList.contains('active'));
+    if (prevActiveFeed) {
+      prevActiveFeed.classList.remove('active');
+    }
     const { activeFeedId } = appState.feeds;
-    const [activeIdValue, sameId] = activeFeedId.split('-');
-    if (activeIdValue === 'sameFeed') {
-      const currentFeedElem = feedElements.find(({ id }) => id === sameId);
-      currentFeedElem.classList.toggle('active');
+    if (!activeFeedId) {
       return;
     }
-    const currentFeed = feedElements.find(({ id }) => id === activeIdValue);
-    const prevActiveFeed = feedElements.find(({ classList }) => classList.contains('active'));
-    const feedsPair = prevActiveFeed ? [currentFeed, prevActiveFeed] : [currentFeed];
-    feedsPair.forEach(({ classList }) => classList.toggle('active'));
+    const currentFeed = feedElements.find(({ id }) => id === activeFeedId);
+    currentFeed.classList.add('active');
+    removeFeedBtn.disabled = false;
+    removeFeedBtn.classList.replace('btn-outline-warning', 'btn-warning');
   });
 
-  const getElement = (coll, ...ids) => {
-    const tagId = ids.length > 1 ? `${ids.join('-')}` : ids;
+  const getElement = (coll, tagId) => {
     let htmlTag = coll[tagId];
     if (!htmlTag) {
       htmlTag = document.getElementById(tagId);
@@ -126,16 +143,17 @@ export default () => {
     }
     return htmlTag;
   };
+
   const postsCountTag = document.getElementById('postsBadge');
-  const feedsBadges = {};
 
   watch(appState.posts, 'fresh', () => {
     const { fresh, all } = appState.posts;
     const { list } = appState.feeds;
-    const [activeFeedId] = appState.feeds.activeFeedId.split('-');
+    const { activeFeedId } = appState.feeds;
     const [currentFeedId] = fresh;
+
     const { postsCount } = list.find(({ feedId }) => feedId === currentFeedId);
-    const currentFeedBadge = getElement(feedsBadges, currentFeedId, 'badge');
+    const currentFeedBadge = getElement(feedsBadges, `${currentFeedId}-badge`);
     const { inputState } = appState.search;
     const postsList = makePostsList(fresh, activeFeedId, inputState);
     postsListTag.prepend(...postsList);
@@ -147,18 +165,28 @@ export default () => {
       postsCountTag.innerText = postsCount;
       return;
     }
-    if (!activeFeedId || activeFeedId === 'sameFeed') {
+    if (!activeFeedId) {
       postsCountTag.innerText = all.length;
     }
   });
 
   watch(appState.posts, 'selected', () => {
-    const { selected } = appState.posts;
+    const { selected, all } = appState.posts;
     const publishedPosts = [...postsListTag.children];
+    if (appState.dataState === 'removing') {
+      removeFeedBtn.disabled = true;
+      removeFeedBtn.classList.replace('btn-warning', 'btn-outline-warning');
+      publishedPosts.forEach((post) => {
+        const postData = all.find(({ postId }) => postId === post.id);
+        if (!postData) {
+          postsListTag.removeChild(post);
+        }
+      });
+    }
     const { search } = appState;
     const searchText = search.inputState === 'matched' ? search.text : '';
-    displayHidePosts(selected, publishedPosts, searchText);
-    postsCountTag.innerText = selected.length;
+    displayHidePosts(selected, [...postsListTag.children], searchText);
+    postsCountTag.innerText = appState.dataState === 'removing' ? all.length : selected.length;
   });
 
   watch(appState.search, 'inputState', () => {
@@ -194,5 +222,10 @@ export default () => {
     const [matchedPosts, searchState] = makeSelection(str, feeds.activeFeedId, posts.all);
     posts.selected = matchedPosts;
     search.inputState = searchState;
+  });
+
+  confirmRemovingBtn.addEventListener('click', () => {
+    $(removingDataModal).modal('hide');
+    removeData(appState);
   });
 };

@@ -26,7 +26,7 @@ const visualize = (inputState, predicate) => {
 
 export const makePostsList = (freshPosts, activeFeedId, inputState) => {
   const [currentFeedId, posts] = freshPosts;
-  const predicate = !activeFeedId || activeFeedId === 'sameFeed' || activeFeedId === currentFeedId;
+  const predicate = !activeFeedId || activeFeedId === currentFeedId;
   let liColl = [];
   posts.forEach((post) => {
     const {
@@ -60,7 +60,7 @@ export const makePostsList = (freshPosts, activeFeedId, inputState) => {
 };
 
 export const displayHidePosts = (selectedPosts, allPosts, searchText) => {
-  if (selectedPosts.length === allPosts.length) {
+  if (selectedPosts.length === allPosts.length || selectedPosts.length === 0) {
     allPosts.forEach((post) => {
       const title = post.querySelector('a');
       title.innerHTML = title.innerText;

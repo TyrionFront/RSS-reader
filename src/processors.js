@@ -52,7 +52,9 @@ const processFeed = (title, description, url, feedsList) => {
   if (sameFeed) {
     throw new Error(`SameFeed already exists:\n  id- ${sameFeed.feedId}\n  Title- ${sameFeed.title}`);
   }
-  const feedId = `rssFeed${feedsList.length + 1}`;
+  const { length } = feedsList;
+  const lastIdNum = length > 0 ? feedsList[length - 1].feedId.split('_')[1] : 0;
+  const feedId = `rssFeed_${Number(lastIdNum) + 1}`;
   return {
     feedId, title, description, postsCount: 0, url,
   };
@@ -94,7 +96,7 @@ const startRefreshFeeds = (appState) => {
     const refresh = () => {
       feeds.timerId = setTimeout(() => {
         refreshFeeds(appState.feeds.list, appState);
-        feeds.timerId = setTimeout(refresh, 30000);
+        setTimeout(refresh, 30000);
       }, 30000);
     };
     refresh();
@@ -102,7 +104,9 @@ const startRefreshFeeds = (appState) => {
 };
 
 export const processFormData = (appState) => {
-  const { addRss, feeds, posts } = appState;
+  const {
+    dataState, addRss, feeds, posts,
+  } = appState;
   addRss.state = 'processing';
   axios.get(`https://cors-anywhere.herokuapp.com/${addRss.url}`)
     .then(({ data }) => {
@@ -113,6 +117,10 @@ export const processFormData = (appState) => {
     })
     .then(({ title, description, itemsList }) => {
       const newFeed = processFeed(title, description, addRss.url, feeds.list);
+      if (dataState === 'removing') {
+        appState.dataState = 'adding'; // eslint-disable-line
+        feeds.activeFeedId = '';
+      }
       feeds.list.push(newFeed);
       posts.fresh = processPosts(itemsList, newFeed.feedId, posts, feeds.list);
 
@@ -132,24 +140,46 @@ export const processFormData = (appState) => {
 };
 
 export const makeSelection = (text, activeFeedId, posts) => {
-  const [idValue] = activeFeedId.split('-');
-  const coll = !idValue || idValue === 'sameFeed'
-    ? posts : posts.filter(({ postId }) => postId.includes(idValue));
+  const coll = !activeFeedId
+    ? posts : posts.filter(({ postId }) => postId.includes(activeFeedId));
   if (!text) {
-    return [coll];
+    return [coll, 'empty'];
   }
   const matchedPosts = coll.filter(({ postTitle }) => postTitle.toLowerCase().includes(text));
   return matchedPosts.length > 0 ? [matchedPosts, 'matched'] : [coll, 'noMatches'];
 };
 
 export const changeFeed = (currentFeedId, appState) => {
+  appState.dataState = 'waiting'; // eslint-disable-line
   const { posts, search, feeds } = appState;
   const { activeFeedId } = feeds;
 
-  const renewedId = activeFeedId !== currentFeedId ? currentFeedId : `sameFeed-${currentFeedId}`;
+  const renewedId = activeFeedId !== currentFeedId ? currentFeedId : '';
   const [matchedPosts, searchState] = makeSelection(search.text, renewedId, posts.all);
 
   feeds.activeFeedId = renewedId;
   posts.selected = matchedPosts;
   search.inputState = searchState;
+};
+
+export const removeData = (appState) => {
+  appState.dataState = 'removing'; // eslint-disable-line no-param-reassign
+  const { feeds, posts } = appState;
+  const { activeFeedId, list, timerId } = feeds;
+  clearTimeout(timerId);
+
+  const separate = (item) => {
+    const [feedId] = item.postId ? item.postId.split('-') : [item.feedId];
+    return feedId !== activeFeedId;
+  };
+
+  const remainingPosts = posts.all.filter(separate);
+  const remainingFeeds = list.filter(separate);
+  posts.all = remainingPosts;
+  posts.selected = [];
+  feeds.list = remainingFeeds;
+
+  if (remainingFeeds.length > 0) {
+    startRefreshFeeds(appState);
+  }
 };
