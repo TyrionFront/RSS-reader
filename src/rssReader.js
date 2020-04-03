@@ -148,8 +148,7 @@ export default () => {
 
   watch(appState.posts, 'fresh', () => {
     const { fresh, all } = appState.posts;
-    const { list } = appState.feeds;
-    const { activeFeedId } = appState.feeds;
+    const { list, activeFeedId } = appState.feeds;
     const [currentFeedId] = fresh;
 
     const { postsCount } = list.find(({ feedId }) => feedId === currentFeedId);

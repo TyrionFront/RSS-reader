@@ -83,11 +83,11 @@ export const displayHidePosts = (selectedPosts, allPosts, searchText) => {
     }
     const { postTitle } = foundPost;
     const pos = postTitle.toLowerCase().indexOf(searchText);
-    const titlePart = postTitle.slice(pos, pos + searchText.length);
-    const highlightedStr = `<span class="bg-primary text-light">${titlePart}</span>`;
-    const basicStrArr = postTitle.split('');
-    basicStrArr.splice(pos, searchText.length, highlightedStr);
-    title.innerHTML = basicStrArr.join('');
+    const searchedPart = postTitle.slice(pos, pos + searchText.length);
+    const highlightedSearchedPart = `<span class="bg-primary text-light">${searchedPart}</span>`;
+    const titleStart = postTitle.slice(0, pos);
+    const titleEnd = postTitle.slice(titleStart.length + searchedPart.length);
+    title.innerHTML = titleStart.concat(highlightedSearchedPart, titleEnd);
     classList.remove('d-none');
   });
 };
