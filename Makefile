@@ -8,5 +8,8 @@ lint:
 	npx eslint .
 
 build:
-	rm -rf dist
+	sudo rm -rf dist
 	NODE_ENV=development npx webpack
+
+deploy:
+	surge dist/
