@@ -1,12 +1,15 @@
-export const makeFeedItem = (feeds, feedsListTag, markActive) => {
-  const { length } = feeds;
+export const makeFeedItem = (appState, feedsListTag, changeFeed) => {
+  const { list } = appState.feeds;
   const {
     feedId, title, description, postsCount,
-  } = feeds[length - 1];
+  } = list[list.length - 1];
   const newFeedElem = document.createElement('li');
   newFeedElem.className = 'list-group-item list-group-item-action rounded border mb-1 d-block';
   newFeedElem.id = `${feedId}`;
-  newFeedElem.addEventListener('click', markActive);
+  newFeedElem.addEventListener('click', ({ currentTarget }) => {
+    const currentId = currentTarget.id;
+    changeFeed(currentId, appState);
+  });
   newFeedElem.innerHTML = `<div class="d-flex justify-content-center">
     <h5 class="flex-fill mb-1">${title}</h5>
       <div>

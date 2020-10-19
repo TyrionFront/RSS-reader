@@ -1,19 +1,10 @@
-import validator from 'validator';
 import axios from 'axios';
 import _ from 'lodash'; // eslint-disable-line lodash-fp/use-fp
+import 'regenerator-runtime';
+import {
+  validateUrl, separate, changeFeed, startRefreshFeeds,
+} from './utils';
 
-const validateUrl = (feeds, url) => {
-  const sameFeed = feeds.find(feed => feed.url === url);
-  const isUrl = validator.isURL(url);
-  let warning;
-  if (sameFeed) {
-    warning = 'sameFeed';
-  }
-  if (!isUrl) {
-    warning = 'wrong';
-  }
-  return [isUrl && !sameFeed, warning];
-};
 
 export const processTypedUrl = (appState, value) => {
   const { addRss, feeds } = appState;
@@ -58,48 +49,29 @@ const processFeed = (title, description, url, feedsList) => {
   };
 };
 
-const processPosts = (itemsList, currentFeedId, posts, feeds) => {
+const processPosts = (itemsList, posts, feed) => {
   const { all } = posts;
-  const currentFeed = _.find(feeds, ['feedId', currentFeedId]);
-  if (!currentFeed) {
-    return [null];
-  }
+  const { feedId } = feed;
   const newPosts = _.differenceBy(itemsList, all, 'postTitle');
   const newPostsWithId = newPosts.map((post) => {
-    currentFeed.postsCount += 1;
-    const postId = `${currentFeedId}-post${currentFeed.postsCount}`;
+    feed.postsCount += 1; //eslint-disable-line
+    const postId = `${feedId}-post${feed.postsCount}`;
     const postWithId = { ...post, postId };
     all.push(postWithId);
     return postWithId;
   });
-  return [currentFeedId, newPostsWithId];
+  return [feedId, newPostsWithId];
 };
 
-const refreshFeeds = ([currentFeed, ...restFeeds], appState) => {
-  const { posts, feeds, proxy } = appState;
+const refreshFeeds = async ([currentFeed, ...restFeeds], appState) => {
+  const { posts, proxy } = appState;
   if (!currentFeed) {
     return;
   }
-  const { feedId, url } = currentFeed;
-  axios.get(`https://${proxy}/${url}`)
-    .then(({ data }) => parseRss(data))
-    .then(({ itemsList }) => processPosts(itemsList, feedId, posts, feeds.list))
-    .then((freshPosts) => {
-      posts.fresh = freshPosts;
-      setTimeout(() => refreshFeeds(restFeeds, appState), 0);
-    });
-};
-
-const startRefreshFeeds = (appState) => {
-  const { feeds } = appState;
-  if (feeds.state === 'not-updating') {
-    feeds.state = 'updating';
-    const refresh = () => {
-      refreshFeeds(appState.feeds.list, appState);
-      feeds.timerId = setTimeout(refresh, 180000);
-    };
-    feeds.timerId = setTimeout(refresh, 70000);
-  }
+  const { data } = await axios.get(`https://${proxy}/${currentFeed.url}`);
+  const { itemsList } = parseRss(data);
+  posts.fresh = processPosts(itemsList, posts, currentFeed);
+  setTimeout(() => refreshFeeds(restFeeds, appState), 0);
 };
 
 export const processFormData = async (appState) => {
@@ -114,37 +86,9 @@ export const processFormData = async (appState) => {
   const { title, description, itemsList } = parsedData;
   const newFeed = processFeed(title, description, addRss.url, feeds.list);
   feeds.list.push(newFeed);
-  posts.fresh = processPosts(itemsList, newFeed.feedId, posts, feeds.list);
+  posts.fresh = processPosts(itemsList, posts, newFeed);
 
-  startRefreshFeeds(appState);
-};
-
-export const makeSelection = (text, activeFeedId, posts) => {
-  const coll = !activeFeedId
-    ? posts : posts.filter(({ postId }) => postId.includes(activeFeedId));
-  if (!text) {
-    return [coll, 'empty'];
-  }
-  const matchedPosts = coll.filter(({ postTitle }) => postTitle.toLowerCase().includes(text));
-  return matchedPosts.length > 0 ? [matchedPosts, 'matched'] : [coll, 'noMatches'];
-};
-
-export const changeFeed = (currentFeedId, appState) => {
-  appState.dataState = 'waiting'; // eslint-disable-line
-  const { posts, search, feeds } = appState;
-  const { activeFeedId } = feeds;
-
-  const renewedId = activeFeedId !== currentFeedId ? currentFeedId : '';
-  const [matchedPosts, searchState] = makeSelection(search.text, renewedId, posts.all);
-
-  feeds.activeFeedId = renewedId;
-  posts.selected = matchedPosts;
-  search.inputState = searchState;
-};
-
-const separate = (item, idToCompare) => {
-  const [itemId] = item.postId ? item.postId.split('-') : [item.feedId];
-  return itemId !== idToCompare;
+  startRefreshFeeds(appState, refreshFeeds);
 };
 
 export const removeData = (appState) => {
@@ -161,6 +105,6 @@ export const removeData = (appState) => {
   changeFeed(activeFeedId, appState);
 
   if (remainingFeeds.length > 0) {
-    startRefreshFeeds(appState);
+    startRefreshFeeds(appState, refreshFeeds);
   }
 };

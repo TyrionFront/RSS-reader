@@ -3,8 +3,11 @@ import i18next from 'i18next';
 import $ from 'jquery';
 import resources from '../locales/descriptions';
 import {
-  processTypedUrl, processFormData, makeSelection, changeFeed, removeData,
+  processTypedUrl, processFormData, removeData,
 } from './processors';
+import {
+  getElement, makeSelection, changeFeed,
+} from './utils';
 import { makePostsList, makeFeedItem, displayHidePosts } from './htmlMakers';
 
 export default () => {
@@ -99,10 +102,6 @@ export default () => {
     }
   });
 
-  const markActive = ({ currentTarget }) => {
-    const currentId = currentTarget.id;
-    changeFeed(currentId, appState);
-  };
   const feedsCountTag = document.getElementById('feedsBadge');
 
   watch(appState.feeds, 'list', () => {
@@ -113,7 +112,7 @@ export default () => {
       delete feedsBadges[countTagIdToRemove];
       return;
     }
-    makeFeedItem(feeds.list, feedsListTag, markActive);
+    makeFeedItem(appState, feedsListTag, changeFeed);
   }, 1);
 
   watch(appState.feeds, 'activeFeedId', () => {
@@ -143,22 +142,12 @@ export default () => {
     removeFeedBtn.classList.replace('btn-outline-warning', 'btn-warning');
   });
 
-  const getElement = (coll, tagId) => {
-    let htmlTag = coll[tagId];
-    if (!htmlTag) {
-      htmlTag = document.getElementById(tagId);
-      coll[tagId] = htmlTag; // eslint-disable-line no-param-reassign
-    }
-    return htmlTag;
-  };
-
   const postsCountTag = document.getElementById('postsBadge');
 
   watch(appState.posts, 'fresh', () => {
     const { fresh, all } = appState.posts;
     const { list, activeFeedId } = appState.feeds;
     const [currentFeedId] = fresh;
-
     if (!currentFeedId) {
       return;
     }
