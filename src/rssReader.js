@@ -19,6 +19,7 @@ export default () => {
   });
 
   const appState = {
+    proxy: 'cors-anywhere.herokuapp.com',
     dataState: 'waiting',
     addRss: {
       state: 'onInput',

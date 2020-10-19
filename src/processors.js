@@ -1,6 +1,7 @@
 import validator from 'validator';
 import axios from 'axios';
 import _ from 'lodash'; // eslint-disable-line lodash-fp/use-fp
+import 'regenerator-runtime';
 
 const validateUrl = (feeds, url) => {
   const sameFeed = feeds.find(feed => feed.url === url);
