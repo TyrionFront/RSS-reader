@@ -16,7 +16,6 @@ export default () => {
   });
 
   const appState = {
-    proxy: 'cors-anywhere.herokuapp.com',
     dataState: 'waiting',
     addRss: {
       state: 'onInput',
@@ -106,11 +105,13 @@ export default () => {
   const feedsCountTag = document.getElementById('feedsBadge');
 
   watch(appState.feeds, 'list', () => {
-    const { feeds } = appState;
+    const { dataState, feeds } = appState;
     feedsCountTag.innerText = feeds.list.length;
-    if (feeds.list.length < [...feedsListTag.children].length) {
+    if (dataState === 'removing') {
+      const feedToRemove = document.getElementById(feeds.activeFeedId);
       const countTagIdToRemove = `${feeds.activeFeedId}-badge`;
       delete feedsBadges[countTagIdToRemove];
+      feedsListTag.removeChild(feedToRemove);
       return;
     }
     makeFeedItem(feeds.list, feedsListTag, markActive);
@@ -120,15 +121,6 @@ export default () => {
     removeFeedBtn.disabled = true;
     removeFeedBtn.classList.replace('btn-warning', 'btn-outline-warning');
     const feedElements = [...feedsListTag.children];
-    if (appState.feeds.list.length < feedElements.length) {
-      feedElements.forEach((feedElem) => {
-        const item = appState.feeds.list.find(({ feedId }) => feedElem.id === feedId);
-        if (!item) {
-          feedsListTag.removeChild(feedElem);
-        }
-      });
-      return;
-    }
     const prevActiveFeed = feedElements.find(({ classList }) => classList.contains('active'));
     if (prevActiveFeed) {
       prevActiveFeed.classList.remove('active');
@@ -159,9 +151,6 @@ export default () => {
     const { list, activeFeedId } = appState.feeds;
     const [currentFeedId] = fresh;
 
-    if (!currentFeedId) {
-      return;
-    }
     const { postsCount } = list.find(({ feedId }) => feedId === currentFeedId);
     const currentFeedBadge = getElement(feedsBadges, `${currentFeedId}-badge`);
     const { inputState } = appState.search;
@@ -183,7 +172,7 @@ export default () => {
   watch(appState.posts, 'selected', () => {
     const { selected, all } = appState.posts;
     const publishedPosts = [...postsListTag.children];
-    if (all.length < publishedPosts.length) {
+    if (appState.dataState === 'removing') {
       removeFeedBtn.disabled = true;
       removeFeedBtn.classList.replace('btn-warning', 'btn-outline-warning');
       publishedPosts.forEach((post) => {
@@ -196,7 +185,7 @@ export default () => {
     const { search } = appState;
     const searchText = search.inputState === 'matched' ? search.text : '';
     displayHidePosts(selected, [...postsListTag.children], searchText);
-    postsCountTag.innerText = selected.length === 0 ? all.length : selected.length;
+    postsCountTag.innerText = appState.dataState === 'removing' ? all.length : selected.length;
   });
 
   watch(appState.search, 'inputState', () => {
@@ -219,19 +208,7 @@ export default () => {
 
   addRssForm.addEventListener('submit', (e) => {
     e.preventDefault();
-    processFormData(appState)
-      .catch((err) => {
-        const { addRss } = appState;
-        addRss.urlState = 'is-invalid';
-        addRss.state = 'failed';
-        if (err.response) {
-          addRss.responseStatus = err.response.status;
-          throw new Error(err);
-        }
-        const [statusType] = err.message.split(' ');
-        addRss.responseStatus = statusType;
-        throw new Error(err);
-      });
+    processFormData(appState);
   });
 
   searchInput.addEventListener('input', ({ target }) => {

@@ -52,7 +52,9 @@ const processFeed = (title, description, url, feedsList) => {
   if (sameFeed) {
     throw new Error(`SameFeed already exists:\n  id- ${sameFeed.feedId}\n  Title- ${sameFeed.title}`);
   }
-  const feedId = _.uniqueId('rss_id');
+  const { length } = feedsList;
+  const lastIdNum = length > 0 ? feedsList[length - 1].feedId.split('_')[1] : 0;
+  const feedId = `rssFeed_${Number(lastIdNum) + 1}`;
   return {
     feedId, title, description, postsCount: 0, url,
   };
@@ -61,9 +63,6 @@ const processFeed = (title, description, url, feedsList) => {
 const processPosts = (itemsList, currentFeedId, posts, feeds) => {
   const { all } = posts;
   const currentFeed = _.find(feeds, ['feedId', currentFeedId]);
-  if (!currentFeed) {
-    return [null];
-  }
   const newPosts = _.differenceBy(itemsList, all, 'postTitle');
   const newPostsWithId = newPosts.map((post) => {
     currentFeed.postsCount += 1;
@@ -76,12 +75,12 @@ const processPosts = (itemsList, currentFeedId, posts, feeds) => {
 };
 
 const refreshFeeds = ([currentFeed, ...restFeeds], appState) => {
-  const { posts, feeds, proxy } = appState;
+  const { posts, feeds } = appState;
   if (!currentFeed) {
     return;
   }
   const { feedId, url } = currentFeed;
-  axios.get(`https://${proxy}/${url}`)
+  axios.get(`https://cors-anywhere.herokuapp.com/${url}`)
     .then(({ data }) => parseRss(data))
     .then(({ itemsList }) => processPosts(itemsList, feedId, posts, feeds.list))
     .then((freshPosts) => {
@@ -95,28 +94,49 @@ const startRefreshFeeds = (appState) => {
   if (feeds.state === 'not-updating') {
     feeds.state = 'updating';
     const refresh = () => {
-      refreshFeeds(appState.feeds.list, appState);
-      feeds.timerId = setTimeout(refresh, 180000);
+      feeds.timerId = setTimeout(() => {
+        refreshFeeds(appState.feeds.list, appState);
+        setTimeout(refresh, 30000);
+      }, 30000);
     };
-    feeds.timerId = setTimeout(refresh, 70000);
+    refresh();
   }
 };
 
-export const processFormData = async (appState) => {
+export const processFormData = (appState) => {
   const {
-    addRss, feeds, posts, proxy,
+    dataState, addRss, feeds, posts,
   } = appState;
   addRss.state = 'processing';
-  const { data } = await axios.get(`https://${proxy}/${addRss.url}`);
-  const parsedData = parseRss(data);
-  addRss.state = 'processed';
-  addRss.urlState = 'empty';
-  const { title, description, itemsList } = parsedData;
-  const newFeed = processFeed(title, description, addRss.url, feeds.list);
-  feeds.list.push(newFeed);
-  posts.fresh = processPosts(itemsList, newFeed.feedId, posts, feeds.list);
+  axios.get(`https://cors-anywhere.herokuapp.com/${addRss.url}`)
+    .then(({ data }) => {
+      const parsedData = parseRss(data);
+      addRss.state = 'processed';
+      addRss.urlState = 'empty';
+      return parsedData;
+    })
+    .then(({ title, description, itemsList }) => {
+      const newFeed = processFeed(title, description, addRss.url, feeds.list);
+      if (dataState === 'removing') {
+        appState.dataState = 'adding'; // eslint-disable-line
+        feeds.activeFeedId = '';
+      }
+      feeds.list.push(newFeed);
+      posts.fresh = processPosts(itemsList, newFeed.feedId, posts, feeds.list);
 
-  startRefreshFeeds(appState);
+      startRefreshFeeds(appState);
+    })
+    .catch((err) => {
+      addRss.urlState = 'is-invalid';
+      addRss.state = 'failed';
+      if (err.response) {
+        addRss.responseStatus = err.response.status;
+        throw new Error(err);
+      }
+      const [statusType] = err.message.split(' ');
+      addRss.responseStatus = statusType;
+      throw new Error(err);
+    });
 };
 
 export const makeSelection = (text, activeFeedId, posts) => {
@@ -142,23 +162,22 @@ export const changeFeed = (currentFeedId, appState) => {
   search.inputState = searchState;
 };
 
-const separate = (item, idToCompare) => {
-  const [itemId] = item.postId ? item.postId.split('-') : [item.feedId];
-  return itemId !== idToCompare;
-};
-
 export const removeData = (appState) => {
   appState.dataState = 'removing'; // eslint-disable-line no-param-reassign
   const { feeds, posts } = appState;
   const { activeFeedId, list, timerId } = feeds;
   clearTimeout(timerId);
-  feeds.state = 'not-updating';
 
-  const remainingPosts = posts.all.filter(item => separate(item, activeFeedId));
-  const remainingFeeds = list.filter(item => separate(item, activeFeedId));
+  const separate = (item) => {
+    const [feedId] = item.postId ? item.postId.split('-') : [item.feedId];
+    return feedId !== activeFeedId;
+  };
+
+  const remainingPosts = posts.all.filter(separate);
+  const remainingFeeds = list.filter(separate);
   posts.all = remainingPosts;
+  posts.selected = [];
   feeds.list = remainingFeeds;
-  changeFeed(activeFeedId, appState);
 
   if (remainingFeeds.length > 0) {
     startRefreshFeeds(appState);
