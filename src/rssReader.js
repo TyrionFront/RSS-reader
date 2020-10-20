@@ -9,6 +9,7 @@ import {
   getElement, makeSelection, changeFeed,
 } from './utils';
 import { makePostsList, makeFeedItem, displayHidePosts } from './htmlMakers';
+import 'regenerator-runtime';
 
 export default () => {
   i18next.init({
@@ -108,8 +109,9 @@ export default () => {
     const { dataState, feeds } = appState;
     feedsCountTag.innerText = feeds.list.length;
     if (dataState === 'removing') {
-      const feedToRemove = document.getElementById(feeds.activeFeedId);
-      const countTagIdToRemove = `${feeds.activeFeedId}-badge`;
+      const [feedToRemove] = [...feedsListTag.children]
+        .filter(item => !feeds.list.find(({ feedId }) => feedId === item.id));
+      const countTagIdToRemove = `${feedToRemove.id}-badge`;
       delete feedsBadges[countTagIdToRemove];
       feedsListTag.removeChild(feedToRemove);
       return;
@@ -178,7 +180,7 @@ export default () => {
     const { search } = appState;
     const searchText = search.inputState === 'matched' ? search.text : '';
     displayHidePosts(selected, [...postsListTag.children], searchText);
-    postsCountTag.innerText = appState.dataState === 'removing' ? all.length : selected.length;
+    postsCountTag.innerText = selected.length;
   });
 
   watch(appState.search, 'inputState', () => {
@@ -199,9 +201,20 @@ export default () => {
     processTypedUrl(appState, value);
   });
 
-  addRssForm.addEventListener('submit', (e) => {
+  addRssForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    processFormData(appState);
+    await processFormData(appState)
+      .catch((err) => {
+        appState.addRss.urlState = 'is-invalid';
+        appState.addRss.state = 'failed';
+        if (err.response) {
+          appState.addRss.responseStatus = err.response.status;
+          throw new Error(err);
+        }
+        const [statusType] = err.message.split(' ');
+        appState.addRss.responseStatus = statusType;
+        throw new Error(err);
+      });
   });
 
   searchInput.addEventListener('input', ({ target }) => {

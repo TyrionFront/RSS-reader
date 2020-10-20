@@ -38,8 +38,8 @@ export const makeSelection = (text, activeFeedId, posts) => {
   return matchedPosts.length > 0 ? [matchedPosts, 'matched'] : [coll, 'noMatches'];
 };
 
-export const changeFeed = (currentFeedId, appState) => {
-  appState.dataState = 'waiting'; // eslint-disable-line
+export const changeFeed = (currentFeedId, appState, dataState) => {
+  appState.dataState = dataState || 'waiting'; // eslint-disable-line
   const { posts, search, feeds } = appState;
   const { activeFeedId } = feeds;
 
