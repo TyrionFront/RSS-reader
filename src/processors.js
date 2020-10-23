@@ -2,7 +2,7 @@ import axios from 'axios';
 import _ from 'lodash'; // eslint-disable-line lodash-fp/use-fp
 import 'regenerator-runtime';
 import {
-  validateUrl, separate, changeFeed, startRefreshFeeds,
+  validateUrl, compare, changeFeed, startRefreshFeeds,
 } from './utils';
 
 
@@ -49,33 +49,35 @@ const processFeed = (title, description, url, feedsList) => {
   };
 };
 
-const processPosts = (itemsList, currentFeedId, posts, feeds) => {
+const processPosts = (itemsList, posts, feed) => {
   const { all } = posts;
-  const currentFeed = _.find(feeds, ['feedId', currentFeedId]);
-  if (!currentFeed) {
-    return [null];
-  }
   const newPosts = _.differenceBy(itemsList, all, 'postTitle');
+  if (newPosts.length === 0) {
+    return null;
+  }
+  const { feedId } = feed;
   const newPostsWithId = newPosts.map((post) => {
-    currentFeed.postsCount += 1;
-    const postId = `${currentFeedId}-post${currentFeed.postsCount}`;
+    feed.postsCount += 1; //eslint-disable-line
+    const postId = `${feedId}-post${feed.postsCount}`;
     const postWithId = { ...post, postId };
     all.push(postWithId);
     return postWithId;
   });
-  return [currentFeedId, newPostsWithId];
+  return [feedId, newPostsWithId];
 };
 
 const refreshFeeds = async ([currentFeed, ...restFeeds], appState) => {
-  const { posts, feeds, proxy } = appState;
+  const { posts, proxy } = appState;
   if (!currentFeed) {
     return;
   }
-  const { feedId, url } = currentFeed;
-  const { data } = await axios.get(`https://${proxy}/${url}`);
+  const { data } = await axios.get(`https://${proxy}/${currentFeed.url}`);
   const { itemsList } = parseRss(data);
-  posts.fresh = processPosts(itemsList, feedId, posts, feeds.list);
-  setTimeout(() => refreshFeeds(restFeeds, appState), 0);
+  const processedData = processPosts(itemsList, posts, currentFeed);
+  if (processedData) {
+    posts.fresh = processedData;
+  }
+  await refreshFeeds(restFeeds, appState);
 };
 
 export const processFormData = async (appState) => {
@@ -91,7 +93,7 @@ export const processFormData = async (appState) => {
   const newFeed = processFeed(title, description, addRss.url, feeds.list);
   feeds.list.push(newFeed);
   appState.dataState = 'adding'; //eslint-disable-line
-  posts.fresh = processPosts(itemsList, newFeed.feedId, posts, feeds.list);
+  posts.fresh = processPosts(itemsList, posts, newFeed);
 
   startRefreshFeeds(appState, refreshFeeds);
 };
@@ -102,8 +104,8 @@ export const removeData = (appState) => {
   clearTimeout(timerId);
   feeds.state = 'not-updating';
 
-  const remainingPosts = posts.all.filter(item => separate(item, activeFeedId));
-  const remainingFeeds = list.filter(item => separate(item, activeFeedId));
+  const remainingPosts = posts.all.filter(item => compare(item, activeFeedId));
+  const remainingFeeds = list.filter(item => compare(item, activeFeedId));
   posts.all = remainingPosts;
   feeds.list = remainingFeeds;
   changeFeed(activeFeedId, appState, 'removing');

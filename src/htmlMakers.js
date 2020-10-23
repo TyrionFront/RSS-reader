@@ -27,8 +27,8 @@ const visualize = (inputState, predicate) => {
   return predicate ? '' : 'd-none';
 };
 
-export const makePostsList = (freshPosts, activeFeedId, inputState) => {
-  const [currentFeedId, posts] = freshPosts;
+export const makePostsList = (freshPostsData, activeFeedId, inputState) => {
+  const [currentFeedId, posts] = freshPostsData;
   const predicate = !activeFeedId || activeFeedId === currentFeedId;
   let liColl = [];
   posts.forEach((post) => {
@@ -38,7 +38,10 @@ export const makePostsList = (freshPosts, activeFeedId, inputState) => {
     const newStoryTag = document.createElement('li');
     const visualization = visualize(inputState, predicate);
 
-    newStoryTag.className = `${currentFeedId} list-group-item rounded border mb-1 ${visualization}`;
+    newStoryTag.className = `${currentFeedId} list-group-item rounded border mb-1`;
+    if (visualization) {
+      newStoryTag.classList.add(visualization);
+    }
     newStoryTag.id = postId;
     newStoryTag.innerHTML = `<a href="${postUrl}" target="_blank">${postTitle}</a>
       <button type="button" class="btn btn-outline-info btn-sm ml-3" data-toggle="modal" data-target="#modal-${postId}">
@@ -75,7 +78,7 @@ export const displayHidePosts = (selectedPosts, allPosts, searchText) => {
     const foundPost = selectedPosts.find(({ postId }) => postId === post.id);
     const { classList } = post;
     if (!foundPost) {
-      classList.add('d-none');
+      classList.add('d-none', 'temp');
       return;
     }
     const title = post.querySelector('a');

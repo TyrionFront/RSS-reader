@@ -143,9 +143,7 @@ export default () => {
     const { fresh, all } = appState.posts;
     const { list, activeFeedId } = appState.feeds;
     const [currentFeedId] = fresh;
-    if (!currentFeedId) {
-      return;
-    }
+
     const { postsCount } = list.find(({ feedId }) => feedId === currentFeedId);
     const currentFeedBadge = getElement(feedsBadges, `${currentFeedId}-badge`);
     const { inputState } = appState.search;
@@ -179,7 +177,7 @@ export default () => {
     }
     const { search } = appState;
     const searchText = search.inputState === 'matched' ? search.text : '';
-    displayHidePosts(selected, [...postsListTag.children], searchText);
+    displayHidePosts(selected, publishedPosts, searchText);
     postsCountTag.innerText = selected.length;
   });
 

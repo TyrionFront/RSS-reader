@@ -14,7 +14,7 @@ export const validateUrl = (feeds, url) => {
   return [isUrl && !sameFeed, warning];
 };
 
-export const separate = (item, idToCompare) => {
+export const compare = (item, idToCompare) => {
   const [itemId] = item.postId ? item.postId.split('-') : [item.feedId];
   return itemId !== idToCompare;
 };
@@ -30,7 +30,7 @@ export const getElement = (coll, tagId) => {
 
 export const makeSelection = (text, activeFeedId, posts) => {
   const coll = !activeFeedId
-    ? posts : posts.filter(({ postId }) => postId.includes(activeFeedId));
+    ? posts.slice(0) : posts.filter(({ postId }) => postId.includes(activeFeedId));
   if (!text) {
     return [coll, 'empty'];
   }
