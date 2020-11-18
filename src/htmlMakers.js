@@ -78,7 +78,7 @@ export const displayHidePosts = (selectedPosts, allPosts, searchText) => {
     const foundPost = selectedPosts.find(({ postId }) => postId === post.id);
     const { classList } = post;
     if (!foundPost) {
-      classList.add('d-none', 'temp');
+      classList.add('d-none');
       return;
     }
     const title = post.querySelector('a');
