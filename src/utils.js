@@ -3,7 +3,7 @@ import validator from 'validator';
 
 export const validateUrl = (feeds, url) => {
   const sameFeed = feeds.find(feed => feed.url === url);
-  const isUrl = validator.isURL(url);
+  const isUrl = validator.isURL(url, { require_protocol: true });
   let warning;
   if (sameFeed) {
     warning = 'sameFeed';
@@ -57,8 +57,8 @@ export const startRefreshFeeds = (appState, refreshFeeds) => {
     feeds.state = 'updating';
     const refresh = async () => {
       await refreshFeeds(appState.feeds.list, appState);
-      feeds.timerId = setTimeout(refresh, 180000);
+      feeds.timerId = setTimeout(refresh, 300000);
     };
-    feeds.timerId = setTimeout(refresh, 70000);
+    feeds.timerId = setTimeout(refresh, 7000);
   }
 };

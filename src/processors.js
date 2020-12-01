@@ -71,13 +71,18 @@ const refreshFeeds = async ([currentFeed, ...restFeeds], appState) => {
   if (!currentFeed) {
     return;
   }
-  const { data } = await axios.get(`https://${proxy}/${currentFeed.url}`);
-  const { itemsList } = parseRss(data);
-  const processedData = processPosts(itemsList, posts, currentFeed);
-  if (processedData) {
-    posts.fresh = processedData;
+  try {
+    const { data } = await axios.get(`${proxy}${currentFeed.url}`);
+    const { itemsList } = parseRss(data.contents);
+    const processedData = processPosts(itemsList, posts, currentFeed);
+    if (processedData) {
+      posts.fresh = processedData;
+    }
+  } catch (error) {
+    console.log(error);
+  } finally {
+    setTimeout(refreshFeeds, 0, restFeeds, appState);
   }
-  await refreshFeeds(restFeeds, appState);
 };
 
 export const processFormData = async (appState) => {
@@ -85,8 +90,8 @@ export const processFormData = async (appState) => {
     addRss, feeds, posts, proxy,
   } = appState;
   addRss.state = 'processing';
-  const { data } = await axios.get(`https://${proxy}/${addRss.url}`);
-  const parsedData = parseRss(data);
+  const { data } = await axios.get(`${proxy}${addRss.url}`);
+  const parsedData = parseRss(data.contents);
   addRss.state = 'processed';
   addRss.urlState = 'empty';
   const { title, description, itemsList } = parsedData;
