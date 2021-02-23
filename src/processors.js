@@ -91,7 +91,6 @@ export const processFormData = async (appState) => {
   } = appState;
   addRss.state = 'processing';
   const { data } = await axios.get(`${proxy.allOrigins}${addRss.url}`);
-  console.log(data);
   const parsedData = parseRss(data.contents);
   addRss.state = 'processed';
   addRss.urlState = 'empty';
