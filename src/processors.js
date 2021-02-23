@@ -72,7 +72,7 @@ const refreshFeeds = async ([currentFeed, ...restFeeds], appState) => {
     return;
   }
   try {
-    const { data } = await axios.get(`${proxy}${currentFeed.url}`);
+    const { data } = await axios.get(`${proxy.allOrigins}${currentFeed.url}`);
     const { itemsList } = parseRss(data.contents);
     const processedData = processPosts(itemsList, posts, currentFeed);
     if (processedData) {
@@ -90,7 +90,8 @@ export const processFormData = async (appState) => {
     addRss, feeds, posts, proxy,
   } = appState;
   addRss.state = 'processing';
-  const { data } = await axios.get(`${proxy}${addRss.url}`);
+  const { data } = await axios.get(`${proxy.allOrigins}${addRss.url}`);
+  console.log(data);
   const parsedData = parseRss(data.contents);
   addRss.state = 'processed';
   addRss.urlState = 'empty';

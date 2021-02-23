@@ -20,7 +20,10 @@ export default () => {
   });
 
   const appState = {
-    proxy: 'https://api.allorigins.win/get?url=',
+    proxy: {
+      allOrigins: 'https://api.allorigins.win/get?url=',
+      heroku: 'https://cors-anywhere.herokuapp.com/',
+    },
     dataState: 'waiting',
     addRss: {
       state: 'onInput',
