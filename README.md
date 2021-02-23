@@ -6,4 +6,4 @@
 
 [link 2 app](https://my-rss_reader.surge.sh)
 
-RSS-rader is a simple SPA(front-end part only at this time) that can read any [rss](https://en.wikipedia.org/wiki/RSS)-channel You want. At this moment it supports channel selecting, posts searching ang regular updating.
+RSS-reader is a simple SPA(front-end part only at this time) that can read any [rss](https://en.wikipedia.org/wiki/RSS)-channel You want. At this moment it supports channel selecting, posts searching ang regular updating.
